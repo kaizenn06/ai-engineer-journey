@@ -13,9 +13,9 @@ Mình học mỗi ngày và commit thường xuyên. Lịch sử commit của re
 ## Roadmap
 
 ### Phase 1 — Programming Fundamentals
-- [ ] Python Fundamentals
-- [ ] Git & GitHub
-- [ ] Data Structures & Algorithms (DSA, duy trì song song)
+- ✅ Python Fundamentals
+- ✅ Git & GitHub
+- ✅ Data Structures & Algorithms (DSA, duy trì song song)
 
 ### Phase 2 — Mathematics & Data
 - [ ] Mathematics & Statistics
