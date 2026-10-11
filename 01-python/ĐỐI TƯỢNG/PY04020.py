@@ -12,7 +12,7 @@ class Invoice :
 
 if __name__ == "__main__" :
     n = int(input())
-    a = []
+    a = [] 
     for i in range(n) :
         a.append(Invoice(input(), input(), int(input()), int(input()), int(input())))
     a.sort(key= lambda x : -x.money)

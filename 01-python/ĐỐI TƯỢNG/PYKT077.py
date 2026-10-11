@@ -8,7 +8,7 @@ class Exam :
         self.date = datetime.strptime(date, '%d/%m/%Y')
         self.hour = datetime.strptime(hour, '%H:%M')
         self.group = group
-
+ 
     def __str__(self) :
         return f"{self.stt} {self.id} {self.name} {self.date:%d/%m/%Y} {self.hour:%H:%M} {self.group}"
 

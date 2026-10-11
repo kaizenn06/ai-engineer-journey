@@ -7,7 +7,7 @@ class Candidate :
         self.area = 1.5 if area == 1 else 1 if area == 2 else 0
         self.total_score = self.score + self.nation + self.area
         self.static = "Do" if self.total_score >= 20.5 else "Truot"
-
+ 
     def __str__(self) :
         return f"{self.id} {self.name} {self.total_score} {self.static}"
 

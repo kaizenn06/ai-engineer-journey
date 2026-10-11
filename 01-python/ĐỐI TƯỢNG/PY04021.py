@@ -9,7 +9,7 @@ class Gamer :
         self.seconds = (self.time_out - self.time_in).seconds
         self.hours = self.seconds // 3600
         self.minutes = (self.seconds - self.hours * 3600) // 60
-
+ 
     def __str__(self) :
         return f"{self.id} {self.name} {self.hours} gio {self.minutes} phut"
 

@@ -10,7 +10,7 @@ class Movies :
 
     def __str__(self) :
         return f"{self.id} {self.type_movie} {self.day:%d/%m/%Y} {self.name} {self.num}"
-
+ 
 if __name__ == "__main__" :
     n, m = map(int, input().split())
     a, b = {}, []
