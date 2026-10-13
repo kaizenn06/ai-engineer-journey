@@ -1,0 +1,7 @@
+CREATE TABLE AUTHOR (
+    AuthorID INT PRIMARY KEY, 
+    AuthorName NVARCHAR(50) NOT NULL,
+    Sex NVARCHAR(10),
+    DOB DATE,
+    Email NVARCHAR(50)
+);

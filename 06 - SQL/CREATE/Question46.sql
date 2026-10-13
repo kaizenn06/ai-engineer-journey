@@ -1,0 +1,10 @@
+CREATE TABLE BOOK (
+    BookID INT PRIMARY KEY,
+    Title NVARCHAR(50) NOT NULL,
+    AuthorID INT NOT NULL,
+    PublicationYear INT,
+    ISBN NVARCHAR(50),
+    GenreID INT,
+    FOREIGN KEY (GenreID) REFERENCES GENRE(GenreID),
+    FOREIGN KEY (AuthorID) REFERENCES AUTHOR(AuthorID)
+);
