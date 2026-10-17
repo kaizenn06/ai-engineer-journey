@@ -3,23 +3,23 @@ class Solution:
         d = len(nums) // 3
         candidate1, candidate2 = None, None
         count1, count2 = 0, 0
-        for num in nums :
-            if num == candidate1 :
+        for num in nums:
+            if num == candidate1:
                 count1 += 1
-            elif num == candidate2 :
+            elif num == candidate2:
                 count2 += 1
-            elif count1 == 0 :
+            elif count1 == 0:
                 candidate1 = num
                 count1 = 1
-            elif count2 == 0 :
+            elif count2 == 0:
                 candidate2 = num
                 count2 = 1
-            else :
+            else:
                 count1 -= 1
                 count2 -= 1
         result = []
-        for candidate in (candidate1, candidate2) :
+        for candidate in (candidate1, candidate2):
             if candidate is not None:
-                if nums.count(candidate) > d :
+                if nums.count(candidate) > d:
                     result.append(candidate)
-        return result 
+        return result
