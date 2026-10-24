@@ -1,6 +1,9 @@
 # MYSQL TỪ SỐ 0 ĐẾN NÂNG CAO
 
-> Tài liệu học MySQL 8.0+ bằng tiếng Việt cho người mới bắt đầu. Mọi ví dụ dùng **một cơ sở dữ liệu bán hàng duy nhất** (`shop_db`) để anh nhìn thấy cùng một dữ liệu được hỏi theo nhiều cách khác nhau.
+> Tài liệu học MySQL **8.0 trở lên** bằng tiếng Việt cho người mới bắt đầu. Mọi ví dụ dùng **một cơ sở dữ liệu bán hàng duy nhất** (`shop_db`) để anh nhìn thấy cùng một dữ liệu được hỏi theo nhiều cách khác nhau.
+>
+> **Quy ước mức độ:** 🟢 *Bắt buộc* · 🟡 *Nên học* · 🔴 *Nâng cao, có thể học sau*.
+> **Trạng thái kiểm chứng:** số liệu và kết quả `SELECT` đã đối chiếu bằng SQLite với cùng dữ liệu mẫu; **các cú pháp riêng của MySQL chưa chạy thử trên MySQL thật**, xem **Phụ lục F**. Khác biệt giữa các phiên bản MySQL xem **Phụ lục E**.
 
 ---
 
@@ -22,10 +25,18 @@
 - [Chương 12: Quy trình suy luận khi làm bài](#chương-12-thứ-tự-thực-thi-và-cách-suy-luận-khi-làm-bài)
 - [Chương 13: Các dạng bài thường gặp (có lời giải)](#chương-13-các-dạng-bài-sql-thường-gặp)
 - [Chương 14: 30 ví dụ tổng hợp xây từng bước](#chương-14-30-ví-dụ-tổng-hợp-xây-từng-bước)
+- [Chương 15: Index và tối ưu truy vấn](#chương-15-index-và-tối-ưu-truy-vấn)
+- [Chương 16: Transaction (giao dịch)](#chương-16-transaction-giao-dịch)
+- [Chương 17: View, Stored Procedure, Trigger và ràng buộc](#chương-17-view-stored-procedure-trigger-và-ràng-buộc)
+- [Chương 18: Chuẩn hóa dữ liệu cơ bản (1NF, 2NF, 3NF)](#chương-18-chuẩn-hóa-dữ-liệu-cơ-bản-1nf-2nf-3nf)
+- [Chương 19: Kỹ thuật thực hành bổ sung](#chương-19-kỹ-thuật-thực-hành-bổ-sung)
+- [Chương 20: Bộ bài tập phân cấp](#chương-20-bộ-bài-tập-phân-cấp)
 - [Phụ lục A: Tổng hợp cú pháp](#phụ-lục-a-tổng-hợp-cú-pháp)
 - [Phụ lục B: Cheat sheet](#phụ-lục-b-cheat-sheet-tra-cứu-nhanh)
 - [Phụ lục C: Khác biệt MySQL / SQL Server / PostgreSQL](#phụ-lục-c-khác-biệt-mysql--sql-server--postgresql)
 - [Phụ lục D: Đưa CSDL về trạng thái gốc](#phụ-lục-d-đưa-cơ-sở-dữ-liệu-về-trạng-thái-gốc)
+- [Phụ lục E: Ghi chú phiên bản MySQL](#phụ-lục-e-ghi-chú-phiên-bản-mysql)
+- [Phụ lục F: Danh sách nội dung chưa kiểm chứng trên MySQL](#phụ-lục-f-danh-sách-nội-dung-chưa-kiểm-chứng-trên-mysql)
 
 ---
 
@@ -43,6 +54,12 @@
 | 8 | Subquery | 8 | Đọc hiểu `UPDATE ... WHERE ... IN (SELECT ...)` |
 | 9–11 | UNION, CTE, Window, INSERT…SELECT | 9–11 | Chọn đúng công cụ |
 | 12–14 | Quy trình + luyện đề | 12–14 | Tự đọc đề → viết SQL |
+| 15 | Giao dịch (Transaction) 🟢 | 16 | Viết được giao dịch chuyển tiền, hiểu `COMMIT`/`ROLLBACK` |
+| 16 | Index và `EXPLAIN` 🟡 | 15 | Đọc được `type`, `key`, `rows`; biết viết truy vấn dùng được index |
+| 17 | Chuẩn hóa 🟡, `VIEW` 🟡 | 18, 17.1 | Tách bảng đến 3NF; tạo view từ truy vấn JOIN |
+| 18 | Kỹ thuật thực hành 🟡 | 19 | Tìm/xóa trùng an toàn, phân trang đúng |
+| 19 | Bài tập phân cấp | 20 | Tự giải 4 mức bài tập |
+| Sau cùng | Procedure, Trigger 🔴 | 17.2, 17.3 | Học khi cần; nhớ đây là cú pháp riêng MySQL |
 
 **Cách học hiệu quả:** (1) Chạy script CSDL ở phần sau. (2) Với mỗi ví dụ, **tự đoán kết quả trước khi chạy**. (3) Làm bài tự luyện trước khi xem đáp án. (4) Với mọi `UPDATE`/`DELETE`, luôn viết `SELECT` tương ứng chạy trước.
 
@@ -497,7 +514,7 @@ CREATE TABLE SALEORDER (
 | `CASCADE` | Xóa dòng cha thì **xóa luôn** dòng con (nguy hiểm, cân nhắc!) |
 | `SET NULL` | Gán FK = NULL (cột phải cho phép NULL) |
 
-**Thứ tự tạo bảng:** bảng cha trước (CUSTOMER, EMPLOYEE, PRODUCT), bảng con sau (SALEORDER, ORDER_DETAIL). **Thứ tự xóa** thì ngược lại. Sai thứ tự gặp lỗi 1215/3730.
+**Thứ tự tạo bảng:** bảng cha trước (CUSTOMER, EMPLOYEE, PRODUCT), bảng con sau (SALEORDER, ORDER_DETAIL). **Thứ tự xóa** thì ngược lại. Sai thứ tự: tạo bảng con trước bảng cha báo lỗi 1824 (*Failed to open the referenced table*) hoặc 1215 (*Cannot add foreign key constraint*); xóa bảng cha trước bảng con báo lỗi 3730.
 
 ### 2.6. Chọn kiểu dữ liệu: quy tắc nhanh
 
@@ -785,7 +802,7 @@ DELETE FROM DEMO_LOG WHERE LogID = 3;
 INSERT INTO DEMO_LOG (Msg) VALUES ('d');                 -- LogID = 4 (không dùng lại 3)
 SELECT LAST_INSERT_ID();                                 -- 4
 ```
-5. **Giải thích:** bộ đếm chỉ tăng, **không** tái sử dụng số đã xóa; `LAST_INSERT_ID()` cho ID vừa chèn trong phiên hiện tại.
+5. **Giải thích:** bộ đếm chỉ tăng, **không** tái sử dụng số đã xóa; `LAST_INSERT_ID()` cho ID vừa chèn trong phiên hiện tại. Số cũng **bị bỏ qua** (tạo "lỗ hổng") khi `INSERT` lỗi hoặc bị `ROLLBACK`, nên đừng dựa vào việc ID liên tục.
 6. **Khác:** `ALTER TABLE t AUTO_INCREMENT = 100;` đặt số bắt đầu; `TRUNCATE` đưa bộ đếm về 1.
 7. **Lỗi:** tự điền giá trị cho cột này gây trùng; dùng `AUTO_INCREMENT` cho cột không phải khóa (1075).
 8. **Khi nào dùng:** khóa chính nhân tạo.
@@ -807,7 +824,7 @@ INSERT INTO DEMO_ENROLL VALUES (1, 101, 6.0);   -- ERROR 1062 (cặp (1,101) đ�
 6. **Khác:** bảng trung gian của quan hệ nhiều-nhiều (như `ORDER_DETAIL`).
 7. **Lỗi:** tham chiếu bằng khóa ngoại phải liệt kê **đủ cặp** cột.
 8. **Khi nào dùng:** bảng nối nhiều-nhiều.
-9. **Bài tự luyện:** viết lệnh thêm điểm mới cho sinh viên 1 môn 101 nếu đã có thì cập nhật. *Đáp án:* `INSERT INTO DEMO_ENROLL VALUES (1,101,6.0) ON DUPLICATE KEY UPDATE Grade = VALUES(Grade);`
+9. **Bài tự luyện:** viết lệnh thêm điểm mới cho sinh viên 1 môn 101 nếu đã có thì cập nhật. *Đáp án:* `INSERT INTO DEMO_ENROLL (StudentID, CourseID, Grade) VALUES (1,101,6.0) AS new_row ON DUPLICATE KEY UPDATE Grade = new_row.Grade;` (cú pháp có bí danh từ MySQL 8.0.19; cú pháp cũ `VALUES(Grade)` vẫn chạy nhưng đã deprecated, xem mục 3.1)
 
 #### 2.11.12. ALTER TABLE
 1. **Công dụng:** sửa cấu trúc bảng đã có. 2. **Cú pháp:** `ALTER TABLE t ADD/MODIFY/RENAME/DROP ...` (mục 2.7)
@@ -956,10 +973,12 @@ INSERT INTO PRODUCT (ProdName, Category, Price, Stock) VALUES
 **Bonus: UPSERT** (thêm, nếu trùng khóa thì cập nhật):
 ```sql
 INSERT INTO PRODUCT (ProdID, ProdName, Category, Price, Stock)
-VALUES (2, 'Mouse Logitech', 'Accessories', 350, 100)
-ON DUPLICATE KEY UPDATE Price = VALUES(Price);
+VALUES (2, 'Mouse Logitech', 'Accessories', 350, 100) AS new_row
+ON DUPLICATE KEY UPDATE Price = new_row.Price;
 ```
 Vì `ProdID = 2` đã tồn tại nên MySQL chuyển sang `UPDATE Price = 350`.
+
+> **Lưu ý phiên bản:** `AS new_row` (đặt bí danh cho dòng sắp chèn) dùng được từ **MySQL 8.0.19**. Cú pháp cũ `ON DUPLICATE KEY UPDATE Price = VALUES(Price)` vẫn chạy được nhưng **đã bị deprecated từ 8.0.20** và có thể bị bỏ trong tương lai. Nếu anh gặp cú pháp `VALUES(cột)` trong tài liệu khác, đó là cách viết cũ.
 
 ### 3.2. UPDATE
 
@@ -1084,7 +1103,7 @@ Chỉ `ProdID = 8` (Webcam) chưa từng bán nên bị ảnh hưởng. (Chi ti�
 **9. Lỗi thường gặp:**
 - Quên `WHERE` (đã cảnh báo).
 - `UPDATE ... SET a = 1 AND b = 2` ❌ — dấu `AND` ở đây là phép logic, không phải dấu ngăn cách. Đúng: `SET a = 1, b = 2`.
-- Lỗi 1093 *"You can't specify target table for update in FROM clause"*: `UPDATE T ... WHERE x IN (SELECT ... FROM T)`. Cách sửa: bọc truy vấn con trong một subquery nữa (`FROM (SELECT ...) AS tmp`) hoặc dùng JOIN.
+- Lỗi 1093 *"You can't specify target table for update in FROM clause"*: `UPDATE T ... WHERE x IN (SELECT ... FROM T)`. Cách sửa: (a) dùng `JOIN`; (b) bọc truy vấn con thành bảng dẫn xuất **có gộp nhóm** (`GROUP BY`, hàm tổng hợp), `LIMIT` hoặc window function, để MySQL buộc phải "vật hóa" nó trước khi sửa; (c) dùng hint `/*+ NO_MERGE(tmp) */`. ⚠️ Một bảng dẫn xuất chỉ dạng `SELECT cột FROM T WHERE ...` có thể bị MySQL **gộp ngược vào câu lệnh** (derived merge) nên lỗi 1093 vẫn xảy ra; xem chi tiết ở mục 8.13.
 - Lỗi 1175 (Safe Update): thêm `WHERE` theo khóa chính, hoặc `SET SQL_SAFE_UPDATES = 0;` (cân nhắc kỹ).
 
 ### 3.3. DELETE
@@ -1318,7 +1337,7 @@ WHERE od.OrderID = 6;
 UPDATE EMPLOYEE SET Salary = Salary * 1.02
 WHERE Salary < (SELECT AVG(Salary) FROM EMPLOYEE);
 
--- ✔ bọc thêm một lớp bảng dẫn xuất
+-- ✔ bọc thêm một lớp bảng dẫn xuất có gộp nhóm (AVG nên được vật hóa trước)
 UPDATE EMPLOYEE SET Salary = Salary * 1.02
 WHERE Salary < (SELECT a FROM (SELECT AVG(Salary) AS a FROM EMPLOYEE) t);
 ```
@@ -1711,7 +1730,7 @@ SELECT ProdName, Price * Stock AS GiaTri FROM PRODUCT WHERE Price * Stock > 1000
 → Laptop Dell 300000.00; Monitor 24 inch 120000.00; Smartphone 225000.00.
 ```sql
 SELECT CustName, City, JoinDate FROM CUSTOMER WHERE JoinDate < '2024-04-01';     -- An, Binh, Cuong
-SELECT OrderID, TotalAmount / 1000 AS NghinDong FROM SALEORDER WHERE OrderID = 1; -- 15.6000
+SELECT OrderID, TotalAmount / 1000 AS NghinDong FROM SALEORDER WHERE OrderID = 1; -- 15.600000
 ```
 
 **DISTINCT**
@@ -2620,7 +2639,7 @@ ORDER BY c.CustID, o.OrderID;
 
 Bảng bên **phải** (`CUSTOMER`) được giữ nguyên toàn bộ, nên khách Phuong (chưa có đơn) vẫn xuất hiện với `OrderID = NULL`.
 
-Lời khuyên: chỉ dùng LEFT JOIN cho nhất quán, đọc code dễ hơn. (MySQL **không** có `FULL OUTER JOIN`; cần giả lập bằng `LEFT JOIN ... UNION ... RIGHT JOIN ...`.)
+Lời khuyên: chỉ dùng LEFT JOIN cho nhất quán, đọc code dễ hơn. (MySQL **không** có `FULL OUTER JOIN`. Cách giả lập **đúng** nằm ở mục 9.3: dùng `UNION ALL`, **không** dùng `UNION` vì `UNION` loại luôn cả các dòng trùng hợp lệ.)
 
 ### 6.5. CROSS JOIN
 
@@ -3115,6 +3134,8 @@ GROUP BY EmpID;
 
 Kiểm tra nhẩm: 98100 + 55800 + 7800 = 161700 = tổng toàn bảng. Luôn tự kiểm tra kiểu này, rất hiệu quả để bắt lỗi.
 
+> **Lưu ý về thứ tự kết quả:** MySQL **8.0 không còn tự sắp xếp** kết quả theo cột `GROUP BY` (MySQL 5.7 trở về trước có làm ngầm). Bảng kết quả trong tài liệu hiển thị theo `EmpID` tăng dần cho dễ đọc; muốn thứ tự chắc chắn phải viết `ORDER BY`.
+
 ### 7.4. GROUP BY nhiều cột
 
 Nhóm theo **tổ hợp** các cột: hai dòng cùng một hộp khi **tất cả các cột gom nhóm đều bằng nhau**.
@@ -3182,7 +3203,7 @@ Anh **viết** `SELECT` đầu tiên, nhưng MySQL **thực thi** theo thứ t�
 | 2 | `WHERE` | **Lọc từng dòng** | Dòng thỏa điều kiện |
 | 3 | `GROUP BY` | **Gom** dòng còn lại thành các nhóm | Các nhóm |
 | 4 | `HAVING` | **Lọc nhóm** (dựa trên giá trị tổng hợp) | Nhóm thỏa điều kiện |
-| 5 | `SELECT` | Tính cột, hàm tổng hợp, bí danh | 1 dòng / nhóm |
+| 5 | `SELECT` | Tính cột, hàm tổng hợp, bí danh và **window function** (Chương 10) | 1 dòng / nhóm |
 | 6 | `DISTINCT` | Loại dòng trùng | |
 | 7 | `ORDER BY` | Sắp xếp | |
 | 8 | `LIMIT` | Cắt bớt dòng | |
@@ -3190,6 +3211,7 @@ Anh **viết** `SELECT` đầu tiên, nhưng MySQL **thực thi** theo thứ t�
 ```
 FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT
 ```
+> **Bổ sung:** window function (`ROW_NUMBER() OVER (...)`...) được tính ở bước `SELECT`, **sau** `WHERE`, `GROUP BY`, `HAVING`. Vì vậy chúng **không dùng được** trong `WHERE`/`GROUP BY`/`HAVING` (phải bọc CTE hoặc subquery rồi lọc ở ngoài, xem 10.5) nhưng dùng được trong `ORDER BY`.
 
 **Hệ quả suy ra ngay:**
 
@@ -3919,12 +3941,20 @@ WHERE CustID NOT IN (SELECT CustID FROM SALEORDER);          -- xoá khách 6
 DELETE FROM EMPLOYEE
 WHERE EmpID IN (SELECT EmpID FROM EMPLOYEE WHERE Salary < 11000000);   -- ❌ lỗi 1093
 ```
-Cách sửa: bọc subquery thêm một lớp bảng dẫn xuất:
+Ví dụ trên chỉ để minh họa lỗi; thực tế **không cần subquery** vì điều kiện nằm ngay trong bảng: `DELETE FROM EMPLOYEE WHERE Salary < 11000000;`.
+
+Khi **thật sự cần** so sánh với kết quả tính từ chính bảng đó (ví dụ so với lương trung bình), cách né lỗi 1093:
 ```sql
+-- (1) Bọc thành bảng dẫn xuất CÓ GỘP NHÓM: MySQL phải tính xong (vật hóa) trước khi xóa
 DELETE FROM EMPLOYEE
-WHERE EmpID IN (SELECT EmpID FROM (SELECT EmpID FROM EMPLOYEE WHERE Salary < 11000000) AS tmp);
+WHERE Salary < (SELECT a FROM (SELECT AVG(Salary) AS a FROM EMPLOYEE) AS t);
+
+-- (2) Dùng hint để cấm gộp bảng dẫn xuất
+DELETE FROM EMPLOYEE
+WHERE EmpID IN (SELECT EmpID FROM (SELECT /*+ NO_MERGE(t) */ EmpID FROM EMPLOYEE WHERE Salary < 11000000) AS t);
 ```
-(Lưu ý ràng buộc khóa ngoại: chỉ xóa được nhân viên chưa có đơn và không là quản lý của ai.)
+> ⚠️ **Sửa so với cách viết thường gặp:** chỉ "bọc thêm một lớp `(SELECT ...) AS tmp`" **chưa chắc đủ**. Nếu bảng dẫn xuất đơn giản (không gộp nhóm, không `LIMIT`, không `DISTINCT`), MySQL có thể gộp (merge) nó vào truy vấn ngoài và lỗi 1093 vẫn xuất hiện. Cách (1) hoạt động vì `AVG` buộc phải vật hóa; cách (2) dùng hint `NO_MERGE`. Cần kiểm tra trên phiên bản MySQL đang dùng (Phụ lục F, mục 4).
+> (Lưu ý ràng buộc khóa ngoại: chỉ xóa được nhân viên chưa có đơn và không là quản lý của ai.)
 
 ### 8.14. Subquery với INSERT ... SELECT
 
@@ -4006,7 +4036,8 @@ WHERE t.Tong > 20000;
 | 1242 Subquery returns more than 1 row | Dùng `=` với subquery nhiều dòng | `IN`, hoặc `MAX/MIN`, `LIMIT 1` |
 | 1241 Operand should contain 1 column | `IN (SELECT a, b ...)` | Chỉ chọn 1 cột |
 | 1248 Every derived table must have its own alias | Subquery trong FROM thiếu bí danh | `... ) AS t` |
-| 1093 target table | UPDATE/DELETE bảng cũng nằm trong subquery | Bọc thêm lớp, hoặc JOIN |
+| 1093 target table | UPDATE/DELETE bảng cũng nằm trong subquery | Dùng `JOIN`; hoặc bảng dẫn xuất **có gộp nhóm** / hint `NO_MERGE` (bảng dẫn xuất đơn giản có thể bị gộp lại, lỗi vẫn còn) |
+| 1235 (hoặc *doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'*) | Dùng `LIMIT` trong subquery của `IN`/`ANY`/`ALL` | Bọc subquery thành bảng dẫn xuất rồi `JOIN`, hoặc dùng `ROW_NUMBER()` |
 | Kết quả rỗng với `NOT IN` | Subquery có NULL | `NOT EXISTS` hoặc `WHERE x IS NOT NULL` |
 
 ### 8.16. Bài tập tự luyện Chương 8
@@ -4179,14 +4210,32 @@ SELECT 'TONG CONG', SUM(TotalAmount) FROM SALEORDER;
 | Ghép thêm **cột** từ bảng liên quan (khách + đơn) | `JOIN` |
 | Gộp **danh sách cùng dạng** từ nhiều nguồn (khách + nhân viên; đơn năm nay + đơn lưu trữ) | `UNION [ALL]` |
 | Báo cáo cần dòng "Tổng cộng" | `UNION ALL` |
-| Muốn `FULL OUTER JOIN` (MySQL không có) | `LEFT JOIN` `UNION` `RIGHT JOIN` |
+| Muốn `FULL OUTER JOIN` (MySQL không có) | `LEFT JOIN` + `UNION ALL` + `RIGHT JOIN ... WHERE (khóa bên trái) IS NULL` |
 
-**Giả lập FULL OUTER JOIN:**
+**Giả lập FULL OUTER JOIN đúng cách:** giữ mọi dòng bên trái (`LEFT JOIN`), rồi **cộng thêm bằng `UNION ALL`** các dòng chỉ có bên phải (`RIGHT JOIN` kèm điều kiện khóa bên trái `IS NULL`).
 ```sql
-SELECT c.CustName, o.OrderID FROM CUSTOMER c LEFT  JOIN SALEORDER o ON o.CustID = c.CustID
-UNION
-SELECT c.CustName, o.OrderID FROM CUSTOMER c RIGHT JOIN SALEORDER o ON o.CustID = c.CustID;
+SELECT A.id, A.v, B.w FROM A LEFT JOIN B ON A.id = B.id
+UNION ALL
+SELECT B.id, A.v, B.w FROM A RIGHT JOIN B ON A.id = B.id
+WHERE A.id IS NULL;
 ```
+**Vì sao không dùng `UNION`?** Thử với hai bảng nhỏ có **dòng trùng hợp lệ** (bảng `A` có hai dòng giống hệt `(1, 'a1')`):
+```sql
+CREATE TABLE A (id INT, v VARCHAR(10));  CREATE TABLE B (id INT, w VARCHAR(10));
+INSERT INTO A VALUES (1,'a1'), (1,'a1'), (2,'a2'), (3,'a3');
+INSERT INTO B VALUES (2,'b2'), (3,'b3'), (4,'b4');
+```
+| id | v | w | Ghi chú |
+|---|---|---|---|
+| 1 | a1 | NULL | chỉ có ở A (dòng thứ nhất) |
+| 1 | a1 | NULL | chỉ có ở A (dòng thứ hai, trùng hợp lệ) |
+| 2 | a2 | b2 | khớp |
+| 3 | a3 | b3 | khớp |
+| 4 | NULL | b4 | chỉ có ở B |
+
+Đây là kết quả `FULL OUTER JOIN` đúng: **5 dòng**. Cách `LEFT JOIN ... UNION ... RIGHT JOIN` (dùng `UNION` thường) chỉ cho **4 dòng** vì `UNION` loại mất một trong hai dòng `(1, a1, NULL)`. Cách `UNION ALL` + `WHERE A.id IS NULL` cho đúng 5 dòng. (Đã kiểm chứng bằng SQLite, vốn hỗ trợ `FULL JOIN` thật để đối chiếu.)
+
+Lưu ý: ở vế `RIGHT JOIN` phải lấy khóa từ `B` (`B.id`) vì với dòng chỉ có ở B thì `A.id` là NULL. Với `CUSTOMER`–`SALEORDER` của `shop_db`, khóa ngoại bảo đảm mọi đơn đều có khách nên vế thứ hai không trả dòng nào, kết quả giống `LEFT JOIN`.
 
 ### 9.4. Toán tử tập hợp khác
 
@@ -4307,7 +4356,7 @@ SELECT EmpName, Cap FROM org ORDER BY Cap, EmpID;
 | Le Thi Lan | 2 |
 | Pham Duc Minh | 3 |
 
-(Phần đầu là "mỏ neo": người không có quản lý. Phần sau lặp lại: tìm cấp dưới của những người đã có, đến khi hết.)
+(Phần đầu là "mỏ neo": người không có quản lý. Phần sau lặp lại: tìm cấp dưới của những người đã có, đến khi hết.) **Giới hạn:** MySQL dừng với lỗi nếu số vòng lặp vượt `cte_max_recursion_depth` (mặc định **1000**); tăng bằng `SET SESSION cte_max_recursion_depth = ...;`, và luôn bảo đảm điều kiện dừng để không lặp vô hạn.
 
 ### 10.2. CTE hay subquery?
 
@@ -4401,6 +4450,8 @@ WHERE Status = 'COMPLETED';
 | 12 | 2025-07-07 | 24000.00 | 136100.00 |
 
 Dòng cuối = 136100 = tổng doanh thu COMPLETED. Thứ tự xử lý: `WHERE` lọc 9 đơn → window tính lũy kế trên 9 đơn đó.
+
+> **Lưu ý khung mặc định:** khi có `ORDER BY` trong `OVER`, khung mặc định là *từ dòng đầu đến dòng hiện tại theo giá trị* (`RANGE`), nên các dòng **đồng giá trị** ở cột sắp xếp (cùng ngày) được cộng **cùng lúc**. Ở ví dụ này `ORDER BY OrderDate, OrderID` là duy nhất nên không gặp vấn đề; nếu chỉ `ORDER BY OrderDate` mà có hai đơn cùng ngày, hai dòng đó sẽ có cùng giá trị lũy kế. Muốn cộng từng dòng một, thêm cột duy nhất vào `ORDER BY` hoặc viết `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.
 
 ### 10.5. ROW_NUMBER, RANK, DENSE_RANK
 
@@ -4540,6 +4591,39 @@ SELECT OrderID, OrderDate, TotalAmount,
 FROM SALEORDER WHERE CustID = 2;
 ```
 </details>
+
+### 10.9. LAG và LEAD: so sánh với dòng trước/sau 🟡
+
+**Khái niệm:** `LAG` lấy giá trị của **dòng đứng trước** trong cửa sổ đã sắp xếp; `LEAD` lấy giá trị của **dòng đứng sau**. Rất hay dùng để tính **chênh lệch so với kỳ trước**.
+
+**Cú pháp:** `LAG(cot [, n [, gia_tri_mac_dinh]]) OVER ([PARTITION BY ...] ORDER BY ...)` (`n` mặc định 1; dòng đầu tiên không có dòng trước nên ra `NULL` nếu không đặt giá trị mặc định).
+
+**Ví dụ:** doanh thu COMPLETED theo tháng và chênh lệch so với tháng trước.
+```sql
+WITH m AS (
+    SELECT DATE_FORMAT(OrderDate, '%Y-%m') AS Thang, SUM(TotalAmount) AS DoanhThu
+    FROM SALEORDER
+    WHERE Status = 'COMPLETED'
+    GROUP BY DATE_FORMAT(OrderDate, '%Y-%m')
+)
+SELECT Thang, DoanhThu,
+       LAG(DoanhThu) OVER (ORDER BY Thang)                 AS ThangTruoc,
+       DoanhThu - LAG(DoanhThu) OVER (ORDER BY Thang)      AS ChenhLech
+FROM m;
+```
+| Thang | DoanhThu | ThangTruoc | ChenhLech |
+|---|---|---|---|
+| 2025-01 | 15600.00 | NULL | NULL |
+| 2025-02 | 28000.00 | 15600.00 | 12400.00 |
+| 2025-03 | 30300.00 | 28000.00 | 2300.00 |
+| 2025-04 | 13000.00 | 30300.00 | -17300.00 |
+| 2025-05 | 23500.00 | 13000.00 | 10500.00 |
+| 2025-06 | 1700.00 | 23500.00 | -21800.00 |
+| 2025-07 | 24000.00 | 1700.00 | 22300.00 |
+
+**Giải thích:** `ORDER BY Thang` trong `OVER` quyết định thế nào là "tháng trước"; tháng đầu không có tháng trước nên `NULL`. Dùng `PARTITION BY` để làm riêng cho từng nhóm (ví dụ từng khách).
+**Lỗi thường gặp:** quên `ORDER BY` trong `OVER` (thứ tự không xác định, kết quả vô nghĩa); quên rằng dòng đầu là `NULL` (có thể dùng `COALESCE` hoặc tham số thứ ba); `LAG` không dùng được trực tiếp trong `WHERE`, hãy bọc CTE.
+
 
 ---
 
@@ -4706,9 +4790,11 @@ Dòng của khách 1 được lưu `SoDon = 26500, TongTien = 3`. MySQL **không
 Cách xử lý:
 ```sql
 INSERT INTO CUSTOMER_SUMMARY (CustID, SoDon, TongTien)
-SELECT CustID, COUNT(*), SUM(TotalAmount) FROM SALEORDER
-WHERE Status = 'COMPLETED' GROUP BY CustID
-ON DUPLICATE KEY UPDATE SoDon = VALUES(SoDon), TongTien = VALUES(TongTien);   -- cập nhật nếu đã có
+SELECT * FROM (
+    SELECT CustID, COUNT(*) AS SoDon, SUM(TotalAmount) AS Tong
+    FROM SALEORDER WHERE Status = 'COMPLETED' GROUP BY CustID
+) AS s
+ON DUPLICATE KEY UPDATE SoDon = s.SoDon, TongTien = s.Tong;   -- cập nhật nếu đã có (dùng bí danh bảng dẫn xuất thay cho VALUES())
 -- hoặc xóa sạch rồi chèn lại: TRUNCATE TABLE CUSTOMER_SUMMARY;
 ```
 
@@ -7053,6 +7139,1512 @@ WHERE rn = 1;
 
 ---
 
+## CHƯƠNG 15: INDEX VÀ TỐI ƯU TRUY VẤN
+
+> **Mức độ:** 🟡 *Nên học* (phần khái niệm, `CREATE INDEX`, leftmost prefix) · 🔴 *Nâng cao* (đọc `EXPLAIN` chi tiết, covering index).
+> **Về độ tin cậy:** các khẳng định về việc "truy vấn nào dùng được index" đã được đối chiếu bằng kế hoạch thực thi của **SQLite** (hành vi B-tree tương tự). Kết quả `EXPLAIN` cụ thể của MySQL phụ thuộc phiên bản và thống kê, nên các ví dụ `EXPLAIN` dưới đây chỉ **mô tả dạng kết quả**, anh cần chạy thật để xác nhận (xem Phụ lục F).
+
+### 15.1. Khái niệm: Index là gì, giải quyết vấn đề gì?
+
+**Index (chỉ mục)** giống **mục lục cuối sách**: thay vì lật từng trang để tìm từ "JOIN", anh tra mục lục để biết ngay trang số mấy.
+
+- **Không có index:** MySQL phải đọc **từng dòng** của bảng để kiểm tra điều kiện `WHERE`. Cách này gọi là **full table scan** (quét toàn bảng). Bảng 12 dòng thì không sao; bảng 10 triệu dòng thì rất chậm.
+- **Có index:** MySQL giữ một cấu trúc phụ (thường là **B-tree**, một dạng cây đã sắp xếp) để **nhảy thẳng** tới các dòng cần tìm.
+
+Với InnoDB (storage engine mặc định):
+- **Khóa chính (PRIMARY KEY)** chính là index chính: dữ liệu bảng được lưu **theo thứ tự khóa chính** (clustered index).
+- Mỗi **index phụ (secondary index)** lưu giá trị cột đã sắp xếp kèm khóa chính của dòng tương ứng.
+- Cột `PRIMARY KEY`, `UNIQUE` tự có index. Cột `FOREIGN KEY` cũng phải có index; nếu chưa có, InnoDB tự tạo.
+
+### 15.2. Dùng để làm gì?
+
+| Tình huống | Index giúp ích thế nào |
+|---|---|
+| `WHERE CustID = 3` | Nhảy thẳng tới các dòng có `CustID = 3` |
+| `WHERE OrderDate BETWEEN ... AND ...` | Đọc một đoạn liên tục trong index đã sắp xếp |
+| `JOIN ... ON o.CustID = c.CustID` | Tìm nhanh các dòng khớp ở bảng kia |
+| `ORDER BY OrderDate` | Dòng đã được sắp sẵn trong index → bớt bước sắp xếp |
+| `UNIQUE` | Kiểm tra trùng lặp nhanh khi `INSERT` |
+
+**Minh họa bằng bảng nhỏ.** Giả sử có index trên cột `CustID` của `SALEORDER`. Về bản chất nó là danh sách **đã sắp xếp** như sau:
+
+| CustID (đã sắp xếp) | Các OrderID tương ứng |
+|---|---|
+| 1 | 1, 2, 11 |
+| 2 | 3, 4, 12 |
+| 3 | 5, 6 |
+| 4 | 7, 8 |
+| 5 | 9, 10 |
+
+- **Trước (không index):** để tìm đơn của khách 3, MySQL xem **cả 12 dòng**.
+- **Sau (có index):** MySQL tra bảng trên, đi thẳng tới dòng `3` và biết ngay đơn `5, 6`, chỉ phải đọc **2 dòng dữ liệu**.
+
+Với 12 dòng khác biệt không đáng kể; với hàng triệu dòng khác biệt rất lớn.
+
+### 15.3. Cú pháp: CREATE INDEX, DROP INDEX
+
+```sql
+-- Tạo index thường
+CREATE INDEX ten_index ON ten_bang (cot1);
+-- Index nhiều cột (composite)
+CREATE INDEX ten_index ON ten_bang (cot1, cot2);
+-- Index duy nhất (cấm trùng)
+CREATE UNIQUE INDEX ten_index ON ten_bang (cot);
+-- Cách khác
+ALTER TABLE ten_bang ADD INDEX ten_index (cot1, cot2);
+
+-- Xem các index của bảng
+SHOW INDEX FROM ten_bang;
+
+-- Xóa index
+DROP INDEX ten_index ON ten_bang;
+-- hoặc
+ALTER TABLE ten_bang DROP INDEX ten_index;
+```
+**Ý nghĩa:** `ten_index` là tên anh tự đặt (quy ước `idx_bang_cot`); danh sách cột trong ngoặc là các cột được sắp xếp theo thứ tự đó.
+
+**Ví dụ trên `shop_db`:**
+```sql
+CREATE INDEX idx_order_date ON SALEORDER (OrderDate);
+SHOW INDEX FROM SALEORDER;
+DROP INDEX idx_order_date ON SALEORDER;
+```
+`SHOW INDEX` liệt kê `PRIMARY`, các index tự tạo cho khóa ngoại (tên có thể khác nhau tùy cách khai báo) và `idx_order_date`. ⚠️ *Tên index tự sinh cho khóa ngoại cần kiểm tra trên máy.*
+
+### 15.4. Index nhiều cột (composite) và quy tắc "tiền tố bên trái" (leftmost prefix)
+
+Index `(CustID, OrderDate)` giống **danh bạ sắp theo Họ rồi mới tới Tên**: tìm theo Họ thì nhanh; tìm theo cả Họ và Tên cũng nhanh; nhưng **chỉ biết Tên** thì không tra theo danh bạ được.
+
+```sql
+CREATE INDEX idx_cust_date ON SALEORDER (CustID, OrderDate);
+```
+Index lưu các cặp đã sắp xếp theo `CustID`, trong cùng `CustID` thì sắp theo `OrderDate`:
+
+| CustID | OrderDate | OrderID |
+|---|---|---|
+| 1 | 2025-01-05 | 1 |
+| 1 | 2025-02-10 | 2 |
+| 1 | 2025-06-25 | 11 |
+| 2 | 2025-02-14 | 3 |
+| 2 | 2025-03-03 | 4 |
+| 2 | 2025-07-07 | 12 |
+| 3 | 2025-03-12 | 5 |
+| ... | ... | ... |
+
+**Quy tắc tiền tố bên trái:** index dùng hiệu quả khi điều kiện bắt đầu từ **cột đầu tiên** và đi lần lượt sang phải.
+
+| Truy vấn | Dùng được index `(CustID, OrderDate)`? | Lý do |
+|---|---|---|
+| `WHERE CustID = 1` | ✅ Có | Dùng cột đầu |
+| `WHERE CustID = 1 AND OrderDate >= '2025-02-01'` | ✅ Có (cả hai cột) | Cột đầu bằng, cột sau là khoảng |
+| `WHERE CustID = 1 ORDER BY OrderDate` | ✅ Có, và không cần sắp xếp lại | Trong cùng `CustID` dữ liệu đã theo `OrderDate` |
+| `WHERE OrderDate >= '2025-02-01'` | ❌ Không hiệu quả | Thiếu cột đầu `CustID` |
+| `WHERE OrderDate = '2025-02-10'` | ❌ Không hiệu quả | Thiếu cột đầu |
+
+*Cột "Dùng được?" đã đối chiếu với kế hoạch thực thi của SQLite: các truy vấn ✅ cho kết quả "tìm kiếm theo index", các truy vấn ❌ cho "quét toàn bảng". MySQL 8.0 còn có tối ưu "skip scan" trong một số trường hợp hẹp, nên anh luôn xác nhận bằng `EXPLAIN`.*
+
+**Nguyên tắc chọn thứ tự cột** (thường dùng):
+1. Cột so sánh **bằng** (`=`) đặt **trước**.
+2. Cột so sánh **khoảng** (`>`, `BETWEEN`) hoặc cột `ORDER BY` đặt **sau**.
+3. Sau cột khoảng, các cột còn lại thường không giúp lọc thêm.
+
+Ví dụ: truy vấn `WHERE Status = 'COMPLETED' AND OrderDate >= '2025-03-01' ORDER BY OrderDate` hợp với index `(Status, OrderDate)`.
+
+**Tránh index thừa:** nếu đã có `(CustID, OrderDate)` thì index riêng chỉ trên `(CustID)` thường **thừa** (vì tiền tố trái đã bao phủ), trừ khi cần cho khóa ngoại và MySQL chưa dùng index kia.
+
+### 15.5. Khi nào nên và không nên tạo index
+
+| ✅ Nên tạo | ❌ Cân nhắc kỹ / không nên |
+|---|---|
+| Cột hay xuất hiện trong `WHERE` | Bảng rất nhỏ (vài chục dòng): quét toàn bảng đã nhanh |
+| Cột dùng để `JOIN` (khóa ngoại) | Cột ít giá trị khác nhau đứng **một mình** (ví dụ `Status` chỉ có 3 giá trị) |
+| Cột dùng nhiều trong `ORDER BY` / `GROUP BY` | Cột bị `UPDATE` rất thường xuyên |
+| Cột cần đảm bảo không trùng (`UNIQUE`) | Cột kiểu văn bản dài (`TEXT`); nếu cần phải dùng index tiền tố |
+| Cột có **nhiều giá trị khác nhau** (độ chọn lọc cao) | Tạo index "cho chắc" lên mọi cột |
+
+**Độ chọn lọc (selectivity):** cột càng có nhiều giá trị khác nhau thì index càng hữu ích. `CustID` trong bảng 100.000 đơn của 5.000 khách lọc còn ~20 dòng; `Status` chia bảng chỉ thành 3 phần lớn.
+
+### 15.6. Ảnh hưởng của index đến SELECT, INSERT, UPDATE, DELETE
+
+| Lệnh | Ảnh hưởng |
+|---|---|
+| `SELECT` | Thường **nhanh hơn** nếu điều kiện dùng được index. Không đảm bảo: optimizer có thể vẫn chọn quét toàn bảng nếu thấy rẻ hơn |
+| `INSERT` | **Chậm hơn một chút**: mỗi index phải được cập nhật thêm một mục |
+| `UPDATE` | Chậm hơn nếu sửa cột **có trong index** (index phải sắp xếp lại) |
+| `DELETE` | Chậm hơn: mỗi index phải xóa mục tương ứng |
+| Dung lượng | Mỗi index chiếm thêm ổ đĩa và bộ nhớ |
+
+→ **Index là sự đánh đổi:** đọc nhanh hơn, ghi chậm hơn. Bảng chủ yếu để đọc thì nhiều index có lợi; bảng ghi dữ liệu liên tục thì nên có ít index.
+
+### 15.7. Viết truy vấn để index phát huy tác dụng
+
+Cụm "**sargable**" (search-argument-able) nghĩa là điều kiện có thể dùng index. Các thói quen làm **mất** index:
+
+| Cách viết làm mất index ❌ | Cách viết tốt hơn ✅ | Lý do |
+|---|---|---|
+| `WHERE YEAR(OrderDate) = 2025` | `WHERE OrderDate >= '2025-01-01' AND OrderDate < '2026-01-01'` | Bọc hàm quanh cột buộc tính hàm cho **từng dòng** |
+| `WHERE Price * 1.1 > 1000` | `WHERE Price > 1000 / 1.1` | Giữ cột "trần" ở một vế |
+| `WHERE CustName LIKE '%Van'` | `WHERE CustName LIKE 'Van%'` (nếu nghiệp vụ cho phép) | Dấu `%` đứng **đầu** làm không tra theo thứ tự được |
+| `WHERE Phone = 901000001` (cột `VARCHAR`, so với **số**) | `WHERE Phone = '0901000001'` | Ép kiểu từng dòng; còn gây sai kết quả (mất số 0 đầu) |
+| `WHERE a = 1 OR b = 2` (hai cột khác nhau) | Tách thành hai `SELECT` rồi `UNION` | `OR` trên nhiều cột khó dùng một index |
+| `SELECT *` | Chỉ chọn cột cần | Cho phép **covering index** (xem 15.9) |
+| `LIMIT 20 OFFSET 1000000` | Phân trang bằng khóa (keyset), xem 19.2 | `OFFSET` lớn vẫn phải đi qua hết các dòng bị bỏ |
+| `SELECT ..., (SELECT COUNT(*) ...)` cho từng dòng lớn | `JOIN` với bảng đã `GROUP BY` | Tránh chạy lại subquery cho từng dòng |
+
+Đã kiểm chứng (SQLite): với index trên `OrderDate`, điều kiện khoảng ngày được tìm bằng index, còn `strftime('%Y', OrderDate) = '2025'` (bọc hàm) phải quét toàn bảng.
+
+### 15.8. EXPLAIN: xem MySQL định thực thi truy vấn thế nào 🔴
+
+**Cú pháp:**
+```sql
+EXPLAIN SELECT ...;             -- kế hoạch dự kiến, KHÔNG chạy truy vấn
+EXPLAIN ANALYZE SELECT ...;     -- (MySQL 8.0.18+) chạy thật và đo thời gian/số dòng thực tế
+EXPLAIN FORMAT=TREE SELECT ...; -- hiển thị dạng cây, dễ đọc hơn (8.0.16+)
+```
+**Các cột quan trọng trong kết quả `EXPLAIN`:**
+
+| Cột | Ý nghĩa | Cần để ý |
+|---|---|---|
+| `table` | Bảng đang được xử lý | Thứ tự các dòng là thứ tự nối bảng |
+| `type` | **Cách truy cập** bảng | Từ tốt đến kém: `system`/`const` → `eq_ref` → `ref` → `range` → `index` → **`ALL`** (quét toàn bảng) |
+| `possible_keys` | Các index *có thể* dùng | Rỗng = không có index phù hợp |
+| `key` | Index *thực sự* được chọn | `NULL` = không dùng index |
+| `key_len` | Số byte của index được dùng | Cho biết dùng được mấy cột của composite index |
+| `rows` | Số dòng **ước lượng** phải đọc | Càng nhỏ càng tốt |
+| `filtered` | % dòng còn lại sau `WHERE` (ước lượng) | Thấp = đọc nhiều bỏ nhiều |
+| `Extra` | Thông tin thêm | Xem bảng dưới |
+
+| Giá trị `Extra` | Nghĩa |
+|---|---|
+| `Using where` | Có lọc thêm bằng `WHERE` sau khi đọc dòng |
+| `Using index` | **Covering index**: chỉ cần đọc index, không đọc bảng (tốt) |
+| `Using filesort` | Phải sắp xếp thêm bằng bộ nhớ/đĩa (tốn kém, không liên quan tới "file") |
+| `Using temporary` | Dùng bảng tạm (thường với `GROUP BY`/`DISTINCT`) |
+| `Using index condition` | Lọc bớt ngay ở mức index |
+
+**Ba câu hỏi khi đọc `EXPLAIN`:** (1) `key` là gì, có dùng index không? (2) `type` có phải `ALL` không, `rows` bao nhiêu? (3) `Extra` có `Using filesort` / `Using temporary` không?
+
+**Ví dụ trước/sau (mô tả dạng kết quả, không phải số liệu đo thật).** Dùng bảng lớn mô phỏng ở mục 15.9.
+```sql
+EXPLAIN SELECT * FROM ORDER_BIG WHERE CustID = 123;
+```
+| | Trước khi tạo index trên `CustID` | Sau `CREATE INDEX idx_big_cust ON ORDER_BIG (CustID);` |
+|---|---|---|
+| `type` | `ALL` | `ref` |
+| `key` | `NULL` | `idx_big_cust` |
+| `rows` (ước lượng) | cỡ **toàn bộ** số dòng của bảng | cỡ **vài chục** dòng (thực tế có 20 dòng khớp) |
+| Ý nghĩa | Quét toàn bảng | Tìm trực tiếp theo index |
+
+⚠️ *Cần kiểm tra trên máy: tên cột/giá trị `EXPLAIN` có thể khác theo phiên bản; riêng trên bảng nhỏ (như 12 dòng của `shop_db`) optimizer thường vẫn chọn quét toàn bảng vì rẻ hơn, nên đừng kết luận từ bảng nhỏ.*
+
+### 15.9. Thực hành với bảng lớn mô phỏng
+
+**Tạo `ORDER_BIG` 100.000 dòng** bằng CTE đệ quy (không dùng dữ liệu thật):
+```sql
+SET SESSION cte_max_recursion_depth = 100000;     -- mặc định chỉ 1000, không đặt sẽ lỗi
+
+CREATE TABLE ORDER_BIG (
+    OrderID     INT AUTO_INCREMENT PRIMARY KEY,
+    CustID      INT NOT NULL,
+    OrderDate   DATE NOT NULL,
+    Status      VARCHAR(20) NOT NULL,
+    TotalAmount DECIMAL(12,2) NOT NULL
+);
+
+INSERT INTO ORDER_BIG (CustID, OrderDate, Status, TotalAmount)
+WITH RECURSIVE seq AS (
+    SELECT 1 AS n
+    UNION ALL
+    SELECT n + 1 FROM seq WHERE n < 100000
+)
+SELECT 1 + MOD(n, 5000),
+       DATE_ADD('2024-01-01', INTERVAL MOD(n, 730) DAY),
+       CASE MOD(n, 3) WHEN 0 THEN 'COMPLETED' WHEN 1 THEN 'PENDING' ELSE 'CANCELLED' END,
+       100 + MOD(n * 37, 9900)
+FROM seq;
+```
+**Kết quả kiểm tra được bằng tính toán** (độc lập với MySQL): tổng 100.000 dòng; `CustID` từ 1 đến 5000, mỗi khách đúng 20 dòng; `COMPLETED` = 33.333, `PENDING` = 33.334, `CANCELLED` = 33.333; `TotalAmount` từ 100 đến 9.999.
+```sql
+SELECT COUNT(*) FROM ORDER_BIG;                       -- 100000
+SELECT COUNT(*) FROM ORDER_BIG WHERE CustID = 123;    -- 20
+```
+⚠️ *Câu lệnh tạo bảng bằng CTE đệ quy cần chạy thử trên MySQL 8.0 (đã kiểm tra logic sinh số liệu bằng SQLite).*
+
+**Thử nghiệm index:**
+```sql
+EXPLAIN SELECT * FROM ORDER_BIG WHERE CustID = 123 AND OrderDate >= '2024-06-01';   -- (1) chưa có index
+CREATE INDEX idx_big_cust_date ON ORDER_BIG (CustID, OrderDate);
+EXPLAIN SELECT * FROM ORDER_BIG WHERE CustID = 123 AND OrderDate >= '2024-06-01';   -- (2) so sánh
+EXPLAIN SELECT * FROM ORDER_BIG WHERE OrderDate >= '2024-06-01';                    -- (3) thiếu cột đầu
+DROP TABLE ORDER_BIG;                                                                -- dọn dẹp
+```
+Kỳ vọng định tính: (1) `type = ALL`; (2) `key = idx_big_cust_date`, `type = range`; (3) khả năng cao vẫn quét nhiều dòng vì thiếu tiền tố trái.
+
+**Covering index** (🔴): nếu index chứa **đủ mọi cột** mà truy vấn cần, MySQL không phải đọc bảng.
+```sql
+SELECT CustID, OrderDate FROM ORDER_BIG WHERE CustID = 123;   -- chỉ cần 2 cột đều có trong idx_big_cust_date
+```
+`Extra` thường hiện `Using index`. (Đã đối chiếu với SQLite: kế hoạch ghi "COVERING INDEX".) Vì thế `SELECT *` làm mất cơ hội này.
+
+### 15.10. Các lỗi truy vấn chậm thường gặp và cách cải thiện
+
+| Nguyên nhân | Dấu hiệu trong `EXPLAIN` | Cách cải thiện |
+|---|---|---|
+| Thiếu index ở cột `WHERE`/`JOIN` | `type = ALL`, `key = NULL` | Thêm index phù hợp |
+| Bọc hàm quanh cột (`YEAR(col)`) | `key = NULL` dù có index | Viết lại thành khoảng giá trị |
+| `LIKE '%...'` | Quét toàn bảng | Đổi thành tiền tố, hoặc dùng FULLTEXT (nâng cao) |
+| Ép kiểu ngầm (chuỗi so với số) | Không dùng index | So sánh đúng kiểu |
+| `ORDER BY` cột không có index + `LIMIT` | `Using filesort` | Tạo index theo thứ tự `WHERE` rồi `ORDER BY` |
+| `OFFSET` rất lớn | Thời gian tăng theo số trang | Phân trang bằng khóa (19.2) |
+| Subquery tương quan trên bảng lớn | Chạy lặp từng dòng | Viết lại bằng `JOIN` + `GROUP BY`, hoặc `EXISTS` có index |
+| `SELECT *` | Không dùng được covering index | Chỉ lấy cột cần |
+| Tạo quá nhiều index | `INSERT/UPDATE` chậm | Xóa index không dùng (`SHOW INDEX`, `DROP INDEX`) |
+
+**Lưu ý quan trọng:** **không có gì đảm bảo index luôn nhanh hơn.** Optimizer dựa vào thống kê để chọn kế hoạch; với bảng nhỏ hoặc điều kiện lấy phần lớn dữ liệu, quét toàn bảng có thể rẻ hơn. Quy trình đúng: (1) đo với `EXPLAIN`/`EXPLAIN ANALYZE`; (2) thêm index; (3) đo lại. MySQL 8.0 hỗ trợ **invisible index** (`ALTER TABLE t ALTER INDEX idx INVISIBLE;`) để thử "nếu bỏ index này thì sao" mà không xóa thật.
+
+### 15.11. Bài tập tự luyện Chương 15
+
+1. Với index `(CustID, OrderDate)`, truy vấn nào dưới đây **dùng được** index một cách hiệu quả? (a) `WHERE CustID = 2`; (b) `WHERE OrderDate = '2025-03-03'`; (c) `WHERE CustID = 2 AND OrderDate > '2025-03-01'`; (d) `WHERE CustID > 1 AND OrderDate = '2025-03-12'`.
+2. Đề xuất index cho truy vấn: `SELECT * FROM SALEORDER WHERE Status = 'COMPLETED' AND OrderDate >= '2025-03-01' ORDER BY OrderDate;`
+3. Viết lại cho dùng được index: `WHERE YEAR(OrderDate) = 2025 AND MONTH(OrderDate) = 5`.
+4. Vì sao không nên tạo index riêng chỉ cho `Status` của `SALEORDER`?
+
+<details><summary>Đáp án</summary>
+
+1. (a) ✅; (c) ✅; (b) ❌ (thiếu cột đầu); (d) ❌ về cơ bản: cột đầu là khoảng (`>`) nên cột thứ hai không còn được dùng để thu hẹp tìm kiếm trong index.
+2. `CREATE INDEX idx_order_status_date ON SALEORDER (Status, OrderDate);` Cột so sánh bằng (`Status`) đứng trước, cột khoảng/`ORDER BY` (`OrderDate`) đứng sau; dữ liệu trong index đã theo `OrderDate` nên không cần sắp xếp lại. (Đã đối chiếu với SQLite: dùng index và không cần bước sắp xếp.)
+3. `WHERE OrderDate >= '2025-05-01' AND OrderDate < '2025-06-01'`.
+4. `Status` chỉ có 3 giá trị nên mỗi giá trị chiếm một phần lớn của bảng (độ chọn lọc thấp), index đứng một mình ít lợi mà vẫn làm chậm ghi. Dạng kết hợp như `(Status, OrderDate)` mới hữu ích khi truy vấn vừa lọc `Status` vừa lọc/sắp xếp theo ngày.
+</details>
+
+---
+
+## CHƯƠNG 16: TRANSACTION (GIAO DỊCH)
+
+> **Mức độ:** 🟢 *Bắt buộc* (16.1 – 16.4, 16.7) · 🟡 *Nên học* (SAVEPOINT, ACID, giới hạn) · 🔴 *Nâng cao* (mức cô lập, khóa dòng).
+> Ví dụ dùng bảng `ACCOUNT`, tách riêng khỏi `shop_db` để không ảnh hưởng dữ liệu cũ. Luồng giao dịch (commit/rollback/savepoint) đã được mô phỏng bằng SQLite; riêng cú pháp và hành vi cụ thể của MySQL xem ghi chú ⚠️ và Phụ lục F.
+
+### 16.1. Khái niệm: Transaction là gì? Khi nào cần?
+
+**Transaction (giao dịch)** là một **nhóm lệnh được thực hiện như một khối duy nhất**: hoặc **tất cả cùng thành công**, hoặc **không lệnh nào có hiệu lực**.
+
+**Tình huống kinh điển: chuyển 200 từ tài khoản An sang tài khoản Binh.** Cần hai lệnh: trừ tiền An, cộng tiền Binh. Nếu máy chủ sập **giữa hai lệnh**: An đã mất 200 mà Binh chưa nhận → **tiền biến mất**. Transaction đảm bảo không xảy ra tình trạng "làm dở".
+
+Cần dùng khi một nghiệp vụ gồm **nhiều lệnh phụ thuộc nhau** (chuyển tiền, tạo đơn + chi tiết đơn + trừ tồn kho). Không cần khi chỉ chạy một lệnh đơn lẻ (mỗi lệnh đã tự là một giao dịch nhỏ, xem 16.6).
+
+### 16.2. Chuẩn bị dữ liệu
+
+```sql
+CREATE TABLE ACCOUNT (
+    AccID   INT PRIMARY KEY,
+    Owner   VARCHAR(50) NOT NULL,
+    Balance DECIMAL(12,2) NOT NULL CHECK (Balance >= 0)
+) ENGINE = InnoDB;
+
+INSERT INTO ACCOUNT (AccID, Owner, Balance) VALUES (1, 'An', 1000), (2, 'Binh', 500);
+```
+| AccID | Owner | Balance |
+|---|---|---|
+| 1 | An | 1000.00 |
+| 2 | Binh | 500.00 |
+
+`ENGINE = InnoDB` là bắt buộc để dùng transaction (xem 16.7).
+
+### 16.3. Cú pháp
+
+| Lệnh | Công dụng |
+|---|---|
+| `START TRANSACTION;` (hoặc `BEGIN;`) | Bắt đầu giao dịch |
+| `COMMIT;` | **Xác nhận**: lưu vĩnh viễn mọi thay đổi từ lúc bắt đầu |
+| `ROLLBACK;` | **Hủy**: quay về trạng thái trước khi bắt đầu |
+| `SAVEPOINT ten;` | Đặt "điểm lưu" giữa chừng |
+| `ROLLBACK TO SAVEPOINT ten;` | Quay về điểm lưu (giao dịch vẫn còn mở) |
+| `RELEASE SAVEPOINT ten;` | Xóa điểm lưu (không ảnh hưởng dữ liệu) |
+
+### 16.4. Ví dụ: chuyển tiền thành công, thất bại và hủy
+
+**a) Chuyển 200 từ An sang Binh, thành công**
+```sql
+START TRANSACTION;
+UPDATE ACCOUNT SET Balance = Balance - 200 WHERE AccID = 1;   -- bước 1: trừ tiền An
+UPDATE ACCOUNT SET Balance = Balance + 200 WHERE AccID = 2;   -- bước 2: cộng tiền Binh
+COMMIT;                                                        -- bước 3: xác nhận
+```
+**Dữ liệu qua từng bước:**
+
+| Thời điểm | An | Binh | Tổng | Ghi chú |
+|---|---|---|---|---|
+| Trước | 1000 | 500 | 1500 | |
+| Sau bước 1 | 800 | 500 | 1300 | *Tổng hụt 200*, chỉ phiên của anh thấy (chưa commit) |
+| Sau bước 2 | 800 | 700 | 1500 | Đã cân bằng, **chưa** commit |
+| Sau `COMMIT` | 800 | 700 | 1500 | Người khác bắt đầu thấy; thay đổi bền vững |
+
+**Giải thích từng bước:** `START TRANSACTION` tắt tạm chế độ tự lưu từng lệnh. Hai `UPDATE` thay đổi dữ liệu nhưng chỉ ở trạng thái "tạm". `COMMIT` biến tất cả thành thay đổi chính thức cùng lúc. Tổng tiền luôn bảo toàn (1500) *khi nhìn từ ngoài*.
+
+**b) Hủy giữa chừng bằng `ROLLBACK`** (giả sử thấy sai sót sau bước 1; xuất phát lại từ 800/700)
+```sql
+START TRANSACTION;
+UPDATE ACCOUNT SET Balance = Balance - 100 WHERE AccID = 1;   -- An còn 700, tạm thời
+SELECT * FROM ACCOUNT;                                         -- An 700, Binh 700
+ROLLBACK;
+SELECT * FROM ACCOUNT;                                         -- An 800, Binh 700 (như cũ)
+```
+| Thời điểm | An | Binh |
+|---|---|---|
+| Trước | 800 | 700 |
+| Giữa giao dịch (trong phiên) | 700 | 700 |
+| Sau `ROLLBACK` | 800 | 700 |
+
+**c) Lệnh bị lỗi giữa giao dịch: số dư không được âm**
+```sql
+START TRANSACTION;
+UPDATE ACCOUNT SET Balance = Balance - 1500 WHERE AccID = 1;  -- ERROR 3819: vi phạm CHECK (Balance >= 0)
+-- Giao dịch VẪN còn mở! Phải quyết định:
+ROLLBACK;                                                      -- hủy toàn bộ, dữ liệu giữ nguyên 800 / 700
+```
+**Điểm dễ nhầm:** khi **một lệnh lỗi**, MySQL chỉ hủy riêng **lệnh đó**; **các lệnh trước nó trong giao dịch vẫn còn hiệu lực** và giao dịch **vẫn mở**. Vì vậy nếu bước 1 đã chạy rồi bước 2 lỗi, ứng dụng/script phải tự gọi `ROLLBACK` để hủy cả khối (đã kiểm chứng logic này bằng SQLite: sau lỗi `in_transaction = True`).
+
+**d) Trường hợp "âm thầm" không báo lỗi:** nếu `AccID` người nhận **không tồn tại**, câu `UPDATE ... WHERE AccID = 99` chạy thành công nhưng **0 dòng bị ảnh hưởng** → tiền An đã trừ mà không ai nhận. Cách phòng: kiểm tra số dòng bị ảnh hưởng (`ROW_COUNT()` trong stored procedure, hoặc ứng dụng kiểm tra), và `ROLLBACK` nếu khác kỳ vọng (xem 17.2).
+
+### 16.5. SAVEPOINT: điểm lưu giữa giao dịch 🟡
+
+**Dùng để làm gì:** hủy **một phần** giao dịch mà không bỏ cả khối.
+```sql
+CREATE TABLE LOGT (id INT AUTO_INCREMENT PRIMARY KEY, msg VARCHAR(20)) ENGINE = InnoDB;
+
+START TRANSACTION;
+INSERT INTO LOGT (msg) VALUES ('a');
+SAVEPOINT sp1;
+INSERT INTO LOGT (msg) VALUES ('b');
+SAVEPOINT sp2;
+INSERT INTO LOGT (msg) VALUES ('c');
+SELECT msg FROM LOGT;                  -- a, b, c
+ROLLBACK TO SAVEPOINT sp2;
+SELECT msg FROM LOGT;                  -- a, b      (bỏ 'c')
+ROLLBACK TO SAVEPOINT sp1;
+SELECT msg FROM LOGT;                  -- a          (bỏ 'b')
+COMMIT;                                -- chỉ 'a' được lưu vĩnh viễn
+```
+| Bước | Nội dung bảng |
+|---|---|
+| Sau 3 lệnh `INSERT` | a, b, c |
+| Sau `ROLLBACK TO SAVEPOINT sp2` | a, b |
+| Sau `ROLLBACK TO SAVEPOINT sp1` | a |
+| Sau `COMMIT` | a |
+
+- `ROLLBACK TO SAVEPOINT` **không kết thúc** giao dịch; vẫn phải `COMMIT` hoặc `ROLLBACK` sau đó.
+- Quay về `sp1` thì các điểm lưu đặt **sau** nó (như `sp2`) bị xóa.
+- `RELEASE SAVEPOINT sp1;` xóa điểm lưu khi không cần nữa (dữ liệu không đổi).
+- `COMMIT`/`ROLLBACK` thường kết thúc giao dịch và **xóa mọi savepoint**.
+
+### 16.6. Chế độ tự động lưu (autocommit) và lệnh tự commit
+
+- Mặc định MySQL bật `autocommit = 1`: **mỗi lệnh riêng lẻ tự là một giao dịch** và được lưu ngay. Vì thế `UPDATE` lỡ tay không có `ROLLBACK` được nếu anh chưa mở giao dịch.
+```sql
+SELECT @@autocommit;       -- 1
+SET autocommit = 0;        -- (cẩn thận) mọi lệnh sau nằm trong giao dịch cho đến khi COMMIT/ROLLBACK
+```
+- **Lệnh DDL tự động `COMMIT`** giao dịch đang mở: `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, `RENAME`. Đây là lý do `TRUNCATE`/`DROP` **không `ROLLBACK` được** và vì sao không nên trộn DDL vào giữa giao dịch.
+
+### 16.7. Bốn thuộc tính ACID 🟡
+
+| Chữ | Tên | Ý nghĩa | Trong ví dụ chuyển tiền |
+|---|---|---|---|
+| **A** | Atomicity (nguyên tử) | Tất cả hoặc không gì cả | Trừ tiền An và cộng tiền Binh: không bao giờ chỉ xảy ra một nửa |
+| **C** | Consistency (nhất quán) | Giao dịch đưa CSDL từ trạng thái hợp lệ sang trạng thái hợp lệ (đúng mọi ràng buộc) | Số dư không âm (`CHECK`), tổng tiền bảo toàn |
+| **I** | Isolation (cô lập) | Các giao dịch chạy đồng thời không làm hỏng nhau | Người khác không thấy trạng thái "An đã trừ, Binh chưa cộng" |
+| **D** | Durability (bền vững) | Đã `COMMIT` thì không mất, kể cả khi máy sập | Sau commit, sập nguồn vẫn còn 800/700 |
+
+### 16.8. Giới hạn và điều kiện sử dụng
+
+- **Phải dùng storage engine hỗ trợ giao dịch:** **InnoDB** (mặc định từ MySQL 5.5). **MyISAM không hỗ trợ**: `ROLLBACK` không có tác dụng. Kiểm tra: `SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'shop_db';`
+- **Giữ giao dịch ngắn:** giao dịch dài giữ khóa lâu → làm các phiên khác phải chờ.
+- **Không để giao dịch mở rồi chờ người dùng nhập liệu.**
+- **Deadlock** (hai giao dịch chờ nhau): MySQL tự hủy một giao dịch với lỗi 1213; ứng dụng nên **thử chạy lại** cả giao dịch.
+- **Chỉ có tác dụng với `INSERT`/`UPDATE`/`DELETE`**; DDL tự commit (16.6).
+
+### 16.9. Giao dịch đồng thời: mức cô lập và khóa dòng 🔴
+
+**Vấn đề:** hai người cùng chuyển tiền từ tài khoản An cùng lúc. Nếu cả hai đều đọc số dư cũ 800 rồi mỗi người trừ 100 và ghi lại 700, An chỉ mất 100 thay vì 200 (**lost update**).
+
+**Mức cô lập (isolation level):**
+
+| Mức | Hiện tượng có thể xảy ra |
+|---|---|
+| `READ UNCOMMITTED` | Đọc dữ liệu **chưa commit** của người khác (dirty read) |
+| `READ COMMITTED` | Chỉ đọc dữ liệu đã commit, nhưng đọc hai lần có thể khác nhau (non-repeatable read) |
+| **`REPEATABLE READ`** *(mặc định của InnoDB)* | Đọc lại trong cùng giao dịch luôn thấy cùng dữ liệu |
+| `SERIALIZABLE` | Chặt nhất, các giao dịch gần như xếp hàng |
+
+```sql
+SELECT @@transaction_isolation;                          -- REPEATABLE-READ
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;  -- đổi cho phiên hiện tại
+```
+**Khóa dòng khi đọc để ghi:** `SELECT ... FOR UPDATE` khóa các dòng đọc được cho đến khi giao dịch kết thúc, ngăn người khác sửa chen vào:
+```sql
+START TRANSACTION;
+SELECT Balance FROM ACCOUNT WHERE AccID = 1 FOR UPDATE;     -- khóa dòng An
+UPDATE ACCOUNT SET Balance = Balance - 100 WHERE AccID = 1;
+COMMIT;                                                      -- nhả khóa
+```
+⚠️ *Hành vi cô lập/khóa của MySQL chưa được kiểm chứng trong tài liệu này (cần hai phiên MySQL thật); xem Phụ lục F.*
+
+### 16.10. Lỗi thường gặp
+
+| Lỗi | Hậu quả | Cách tránh |
+|---|---|---|
+| Quên `COMMIT` | Thay đổi chỉ tồn tại trong phiên, người khác không thấy; khóa giữ lâu | Luôn kết thúc bằng `COMMIT` hoặc `ROLLBACK` |
+| Nghĩ rằng lỗi tự hủy cả giao dịch | Các lệnh trước vẫn còn hiệu lực | Tự `ROLLBACK` khi có lỗi |
+| Dùng bảng MyISAM | `ROLLBACK` không hoạt động | Dùng InnoDB |
+| Đặt `TRUNCATE`/`ALTER` trong giao dịch | Tự commit, mất khả năng hoàn tác | Tránh DDL trong giao dịch |
+| Giao dịch quá dài | Chờ khóa, deadlock | Chia nhỏ, giữ ngắn |
+
+### 16.11. Bài tập tự luyện Chương 16
+
+1. Viết giao dịch chuyển 300 từ Binh sang An, rồi cho biết số dư sau khi `COMMIT` (xuất phát từ An 800, Binh 700).
+2. An có 800. Giao dịch: trừ 500, sau đó trừ tiếp 500 (lần hai lỗi vì `CHECK`). Nếu `COMMIT` ngay sau lỗi thì An còn bao nhiêu? Làm đúng thế nào?
+3. Dùng `SAVEPOINT` để thử chuyển 100 và nếu không muốn thì hoàn tác riêng bước đó mà không bỏ giao dịch.
+
+<details><summary>Đáp án</summary>
+
+1. 
+```sql
+START TRANSACTION;
+UPDATE ACCOUNT SET Balance = Balance - 300 WHERE AccID = 2;
+UPDATE ACCOUNT SET Balance = Balance + 300 WHERE AccID = 1;
+COMMIT;
+```
+→ An 1100, Binh 400 (tổng vẫn 1500).
+2. Lệnh trừ 500 đầu tiên **vẫn còn hiệu lực** (An còn 300); lệnh thứ hai lỗi nên bị hủy riêng nó. Nếu `COMMIT` ngay, An còn **300** (giao dịch làm dở được lưu!). Cách đúng: phát hiện lỗi rồi `ROLLBACK` → An vẫn 800.
+3. 
+```sql
+START TRANSACTION;
+SAVEPOINT truoc_chuyen;
+UPDATE ACCOUNT SET Balance = Balance - 100 WHERE AccID = 1;
+UPDATE ACCOUNT SET Balance = Balance + 100 WHERE AccID = 2;
+-- không muốn nữa:
+ROLLBACK TO SAVEPOINT truoc_chuyen;   -- hủy riêng hai lệnh trên
+COMMIT;                               -- phần còn lại (nếu có) vẫn được lưu
+```
+</details>
+
+---
+
+## CHƯƠNG 17: VIEW, STORED PROCEDURE, TRIGGER VÀ RÀNG BUỘC
+
+> **Phân loại mức độ để anh biết nên học cái nào trước:**
+>
+> | Nội dung | Mức | Gợi ý |
+> |---|---|---|
+> | `VIEW` | 🟡 Nên học | Dễ, hữu ích ngay khi viết nhiều truy vấn `JOIN` lặp lại |
+> | Ràng buộc (PK, FK, UNIQUE, NOT NULL, CHECK, DEFAULT) | 🟢 **Bắt buộc** | **Đã giải thích đầy đủ ở Chương 2** (mục 2.3, 2.11); mục 17.4 chỉ tổng hợp |
+> | Stored Procedure | 🔴 Nâng cao, có thể học sau | Cần khi làm ứng dụng/ôn thi nâng cao |
+> | Trigger | 🔴 Nâng cao, có thể học sau | Dùng cẩn thận, dễ gây "logic ẩn" |
+>
+> **Độ tin cậy:** kết quả của `VIEW` đã đối chiếu bằng SQLite. **Stored Procedure và Trigger dùng cú pháp riêng của MySQL nên chưa được chạy thử** trong tài liệu này (xem Phụ lục F). Hãy tự chạy và đối chiếu.
+
+### 17.1. VIEW (bảng ảo) 🟡
+
+**Khái niệm:** `VIEW` là một **câu `SELECT` được đặt tên và lưu lại**. Nó trông như một bảng nhưng **không lưu dữ liệu riêng**; mỗi lần anh truy vấn view, MySQL chạy lại câu `SELECT` bên trong trên các bảng thật.
+
+**Dùng để làm gì:**
+- Rút gọn các `JOIN` dài, lặp lại (viết một lần, dùng nhiều lần).
+- **Ẩn bớt cột nhạy cảm** (ví dụ ẩn `Salary`) khi cấp quyền cho người khác.
+- Giữ cho báo cáo nhất quán (mọi người dùng cùng một định nghĩa "doanh thu").
+
+**Cú pháp:**
+```sql
+CREATE [OR REPLACE] VIEW ten_view AS
+SELECT ...;
+
+SELECT * FROM ten_view WHERE ...;     -- dùng như bảng
+SHOW CREATE VIEW ten_view;            -- xem định nghĩa
+DROP VIEW [IF EXISTS] ten_view;       -- xóa view (KHÔNG xóa dữ liệu bảng gốc)
+```
+**Ví dụ 1: view tóm tắt đơn hàng (gom 3 bảng)**
+```sql
+CREATE OR REPLACE VIEW v_order_summary AS
+SELECT o.OrderID, c.CustName, e.EmpName, o.OrderDate, o.Status, o.TotalAmount
+FROM SALEORDER o
+JOIN CUSTOMER c ON c.CustID = o.CustID
+JOIN EMPLOYEE e ON e.EmpID  = o.EmpID;
+
+SELECT * FROM v_order_summary WHERE OrderID <= 3 ORDER BY OrderID;
+```
+| OrderID | CustName | EmpName | OrderDate | Status | TotalAmount |
+|---|---|---|---|---|---|
+| 1 | Nguyen Van An | Nguyen Thu Ha | 2025-01-05 | COMPLETED | 15600.00 |
+| 2 | Nguyen Van An | Nguyen Thu Ha | 2025-02-10 | COMPLETED | 9200.00 |
+| 3 | Tran Thi Binh | Tran Quoc Huy | 2025-02-14 | COMPLETED | 18800.00 |
+
+Từ giờ thay vì viết 2 `JOIN`, anh chỉ cần `SELECT ... FROM v_order_summary`.
+
+**Ví dụ 2: view có gom nhóm**
+```sql
+CREATE OR REPLACE VIEW v_customer_revenue AS
+SELECT c.CustID, c.CustName,
+       COUNT(o.OrderID)                AS SoDon,
+       COALESCE(SUM(o.TotalAmount), 0) AS DoanhThu
+FROM CUSTOMER c
+LEFT JOIN SALEORDER o ON o.CustID = c.CustID AND o.Status = 'COMPLETED'
+GROUP BY c.CustID, c.CustName;
+
+SELECT * FROM v_customer_revenue;
+```
+| CustID | CustName | SoDon | DoanhThu |
+|---|---|---|---|
+| 1 | Nguyen Van An | 3 | 26500.00 |
+| 2 | Tran Thi Binh | 2 | 42800.00 |
+| 3 | Le Van Cuong | 1 | 30300.00 |
+| 4 | Pham Thi Dung | 2 | 17500.00 |
+| 5 | Hoang Van Em | 1 | 19000.00 |
+| 6 | Vu Thi Phuong | 0 | 0.00 |
+
+Có thể truy vấn tiếp trên view như một bảng: `SELECT CustName, DoanhThu FROM v_customer_revenue WHERE DoanhThu > 25000 ORDER BY DoanhThu DESC;` → Binh 42800, Cuong 30300, An 26500.
+
+**View có cập nhật được không?** Chỉ với view **đơn giản** (một bảng gốc, không `GROUP BY`, `DISTINCT`, hàm tổng hợp, `UNION`...) thì `INSERT`/`UPDATE`/`DELETE` qua view được chuyển xuống bảng gốc. View có `JOIN` hoặc gom nhóm (như hai view trên) **không** cập nhật được.
+
+**`WITH CHECK OPTION`:** ngăn sửa dữ liệu qua view khiến dòng "biến mất" khỏi view.
+```sql
+CREATE OR REPLACE VIEW v_pending_orders AS
+SELECT OrderID, CustID, EmpID, OrderDate, Status, TotalAmount
+FROM SALEORDER
+WHERE Status = 'PENDING'
+WITH CHECK OPTION;
+
+UPDATE v_pending_orders SET TotalAmount = 2000 WHERE OrderID = 6;      -- OK: sửa được bảng gốc
+UPDATE v_pending_orders SET Status = 'COMPLETED' WHERE OrderID = 6;    -- ERROR 1369: CHECK OPTION failed
+```
+⚠️ *Hai lệnh `UPDATE` qua view chưa chạy thử trên MySQL.*
+
+**Lưu ý:**
+- View **không tăng tốc** truy vấn (nó chỉ là câu `SELECT` được lưu). MySQL **không có materialized view** (view lưu sẵn dữ liệu).
+- Viết cột rõ ràng thay vì `SELECT *` trong định nghĩa view: danh sách cột bị "đóng băng" lúc tạo; đổi cấu trúc bảng gốc sau đó có thể làm view lỗi.
+- Xóa/đổi bảng gốc mà quên view → view lỗi khi dùng.
+
+**Lỗi thường gặp:** `ERROR 1050 Table already exists` khi tạo view trùng tên bảng/view; `1347 is not of type BASE TABLE` khi dùng `DROP TABLE` cho view (phải `DROP VIEW`); cố cập nhật qua view có `JOIN`/`GROUP BY`.
+
+**Bài tập:** tạo view `v_product_stock_value(ProdID, ProdName, GiaTriTon)` với `GiaTriTon = Price * Stock`, rồi lấy sản phẩm có giá trị tồn trên 100000.
+<details><summary>Đáp án</summary>
+
+```sql
+CREATE OR REPLACE VIEW v_product_stock_value AS
+SELECT ProdID, ProdName, Price * Stock AS GiaTriTon FROM PRODUCT;
+
+SELECT * FROM v_product_stock_value WHERE GiaTriTon > 100000;
+```
+→ Laptop Dell 300000.00; Monitor 24 inch 120000.00; Smartphone 225000.00.
+</details>
+
+### 17.2. STORED PROCEDURE (thủ tục lưu sẵn) 🔴
+
+**Khái niệm:** một **đoạn chương trình SQL được đặt tên, lưu trong CSDL**, gọi lại bằng `CALL`. Có thể nhận tham số, khai báo biến, dùng `IF`, vòng lặp, giao dịch.
+
+**Dùng để làm gì:** gom một quy trình nghiệp vụ nhiều bước (ví dụ chuyển tiền), tái sử dụng, giảm số lần ứng dụng phải gọi qua mạng.
+
+**Cú pháp:**
+```sql
+DELIMITER $$                                   -- đổi dấu kết thúc câu lệnh của TRÌNH KHÁCH (client)
+CREATE PROCEDURE ten_proc (IN p1 KIEU, OUT p2 KIEU)
+BEGIN
+    ... các lệnh, mỗi lệnh kết thúc bằng ; ...
+END$$
+DELIMITER ;                                    -- trả về dấu mặc định
+
+CALL ten_proc(gia_tri, @bien);                 -- gọi
+DROP PROCEDURE IF EXISTS ten_proc;             -- xóa
+```
+`DELIMITER` **không phải lệnh SQL** mà là lệnh của công cụ gõ lệnh (mysql client, Workbench). Cần đổi vì thân thủ tục chứa dấu `;`, nếu không client sẽ tưởng câu lệnh đã kết thúc sớm.
+
+**Tham số:** `IN` (đưa vào, mặc định), `OUT` (trả ra), `INOUT` (cả hai).
+
+**Ví dụ 1: liệt kê đơn của một khách**
+```sql
+DELIMITER $$
+CREATE PROCEDURE sp_orders_by_customer (IN p_cust INT)
+BEGIN
+    SELECT OrderID, OrderDate, Status, TotalAmount
+    FROM SALEORDER
+    WHERE CustID = p_cust
+    ORDER BY OrderDate;
+END$$
+DELIMITER ;
+
+CALL sp_orders_by_customer(3);
+```
+Kết quả kỳ vọng (đúng theo dữ liệu mẫu, vì thân thủ tục chỉ là câu `SELECT`): `(5, 2025-03-12, COMPLETED, 30300.00)` và `(6, 2025-04-01, PENDING, 1600.00)`.
+
+**Ví dụ 2: tham số `OUT`**
+```sql
+DELIMITER $$
+CREATE PROCEDURE sp_customer_revenue (IN p_cust INT, OUT p_total DECIMAL(12,2))
+BEGIN
+    SELECT COALESCE(SUM(TotalAmount), 0) INTO p_total
+    FROM SALEORDER
+    WHERE CustID = p_cust AND Status = 'COMPLETED';
+END$$
+DELIMITER ;
+
+CALL sp_customer_revenue(2, @t);
+SELECT @t;                          -- 42800.00
+```
+`@t` là biến phiên (session variable) nhận giá trị trả ra.
+
+**Ví dụ 3: chuyển tiền an toàn (kết hợp Chương 16)**
+```sql
+DELIMITER $$
+CREATE PROCEDURE sp_transfer (IN p_from INT, IN p_to INT, IN p_amount DECIMAL(12,2))
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;            -- có lỗi SQL bất kỳ → hủy cả giao dịch
+        RESIGNAL;            -- báo lỗi ra ngoài cho người gọi
+    END;
+
+    START TRANSACTION;
+    UPDATE ACCOUNT SET Balance = Balance - p_amount WHERE AccID = p_from;
+    IF ROW_COUNT() = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Tai khoan chuyen khong ton tai';
+    END IF;
+    UPDATE ACCOUNT SET Balance = Balance + p_amount WHERE AccID = p_to;
+    IF ROW_COUNT() = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Tai khoan nhan khong ton tai';
+    END IF;
+    COMMIT;
+END$$
+DELIMITER ;
+
+CALL sp_transfer(1, 2, 200);        -- thành công: An -200, Binh +200
+CALL sp_transfer(1, 99, 100);       -- lỗi 'Tai khoan nhan khong ton tai', toàn bộ được ROLLBACK
+```
+Giải thích: `DECLARE EXIT HANDLER` bắt mọi lỗi SQL (kể cả lỗi do `SIGNAL`), `ROLLBACK` rồi thoát; `ROW_COUNT()` cho số dòng bị ảnh hưởng bởi lệnh `UPDATE` ngay trước; `SIGNAL` chủ động phát lỗi. Nhờ vậy ca "người nhận không tồn tại" (16.4d) được phát hiện và hủy.
+
+⚠️ *Ba thủ tục trên chưa được chạy thử trên MySQL.*
+
+**Ưu/nhược:** ưu: tái sử dụng, nhất quán, ít gọi qua mạng; nhược: khó kiểm thử/quản lý phiên bản, logic nằm trong CSDL, cú pháp riêng từng hệ quản trị (không chuyển sang SQL Server/PostgreSQL được nguyên xi).
+
+**Lỗi thường gặp:** quên `DELIMITER` (lỗi cú pháp ngay ở dấu `;` đầu tiên); đặt tên tham số trùng tên cột (gây nhầm lẫn: nên đặt tiền tố `p_`); quên `DROP PROCEDURE IF EXISTS` khi sửa (muốn sửa phải xóa rồi tạo lại).
+
+### 17.3. TRIGGER 🔴
+
+**Khái niệm:** đoạn mã **tự chạy** khi có `INSERT`, `UPDATE` hoặc `DELETE` trên một bảng, **trước (BEFORE) hoặc sau (AFTER)** thao tác đó, mỗi lần cho **từng dòng** bị ảnh hưởng.
+
+**Dùng để làm gì:** ghi nhật ký thay đổi, kiểm tra điều kiện phức tạp, giữ dữ liệu dư thừa nhất quán.
+
+**Cú pháp:**
+```sql
+CREATE TRIGGER ten_trigger
+{BEFORE | AFTER} {INSERT | UPDATE | DELETE} ON ten_bang
+FOR EACH ROW
+BEGIN
+    ... dùng NEW.cot (giá trị mới) và OLD.cot (giá trị cũ) ...
+END;
+
+SHOW TRIGGERS;
+DROP TRIGGER IF EXISTS ten_trigger;
+```
+| Sự kiện | `OLD` | `NEW` |
+|---|---|---|
+| `INSERT` | không có | có |
+| `UPDATE` | có | có |
+| `DELETE` | có | không có |
+
+**Ví dụ 1: ghi lịch sử đổi giá**
+```sql
+CREATE TABLE PRICE_HISTORY (
+    HistID    INT AUTO_INCREMENT PRIMARY KEY,
+    ProdID    INT,
+    OldPrice  DECIMAL(12,2),
+    NewPrice  DECIMAL(12,2),
+    ChangedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+DELIMITER $$
+CREATE TRIGGER trg_product_price_log
+AFTER UPDATE ON PRODUCT
+FOR EACH ROW
+BEGIN
+    IF NEW.Price <> OLD.Price THEN
+        INSERT INTO PRICE_HISTORY (ProdID, OldPrice, NewPrice)
+        VALUES (OLD.ProdID, OLD.Price, NEW.Price);
+    END IF;
+END$$
+DELIMITER ;
+
+UPDATE PRODUCT SET Price = 350 WHERE ProdID = 2;
+SELECT ProdID, OldPrice, NewPrice FROM PRICE_HISTORY;
+```
+Kết quả kỳ vọng: một dòng `(2, 300.00, 350.00)`. Nếu `UPDATE` không đổi giá (chỉ đổi `Stock`) thì `IF` sai nên **không** ghi gì.
+
+**Ví dụ 2: chặn bán vượt tồn kho (`BEFORE INSERT`)**
+```sql
+DELIMITER $$
+CREATE TRIGGER trg_detail_check_stock
+BEFORE INSERT ON ORDER_DETAIL
+FOR EACH ROW
+BEGIN
+    DECLARE v_stock INT;
+    SELECT Stock INTO v_stock FROM PRODUCT WHERE ProdID = NEW.ProdID;
+    IF v_stock < NEW.Quantity THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Khong du ton kho';
+    END IF;
+END$$
+DELIMITER ;
+```
+**Ví dụ 3: tự cộng tổng đơn (`AFTER INSERT`, thân chỉ một lệnh nên không cần `DELIMITER`)**
+```sql
+CREATE TRIGGER trg_detail_after_insert
+AFTER INSERT ON ORDER_DETAIL
+FOR EACH ROW
+UPDATE SALEORDER
+SET TotalAmount = TotalAmount + NEW.Quantity * NEW.UnitPrice
+WHERE OrderID = NEW.OrderID;
+```
+Đây là cách giữ cột dư thừa `TotalAmount` nhất quán với chi tiết (xem 18.6); cần thêm trigger tương tự cho `UPDATE`/`DELETE` nếu muốn đầy đủ.
+
+⚠️ *Các trigger trên chưa được chạy thử trên MySQL.*
+
+**Cảnh báo:**
+- Trigger là "**logic ẩn**": người sửa dữ liệu có thể không biết nó tồn tại, khó gỡ lỗi.
+- Trigger có thể kích hoạt trigger khác → khó theo dõi; làm chậm `INSERT`/`UPDATE`/`DELETE` hàng loạt.
+- Hành động xếp tầng của khóa ngoại (`ON DELETE CASCADE`...) **không kích hoạt** trigger trong MySQL.
+- Nếu một ràng buộc (`CHECK`, `FOREIGN KEY`, `UNIQUE`) làm được việc, hãy dùng ràng buộc thay cho trigger.
+
+**Lỗi thường gặp:** quên `FOR EACH ROW`; dùng `OLD` trong trigger `INSERT` hoặc `NEW` trong trigger `DELETE`; sửa chính bảng đang kích hoạt trigger (lỗi 1442).
+
+### 17.4. Ràng buộc: tổng hợp (🟢 Bắt buộc, đã học ở Chương 2)
+
+Nội dung chi tiết (cú pháp, ví dụ, lỗi) nằm ở **mục 2.3 và 2.11.4 – 2.11.11**. Bảng tổng hợp để chọn đúng ràng buộc:
+
+| Muốn bảo đảm | Dùng | Lỗi khi vi phạm |
+|---|---|---|
+| Mỗi dòng có định danh duy nhất | `PRIMARY KEY` | 1062 (trùng), 1048 (NULL) |
+| Giá trị phải tồn tại ở bảng cha | `FOREIGN KEY` | 1452 (chèn), 1451 (xóa cha còn con) |
+| Không để trống | `NOT NULL` | 1048 / 1364 |
+| Không trùng (cho phép nhiều NULL) | `UNIQUE` | 1062 |
+| Giá trị trong miền cho phép | `CHECK` | 3819 |
+| Giá trị tự điền khi bỏ trống | `DEFAULT` | không lỗi |
+| Tự tăng khóa chính | `AUTO_INCREMENT` | không lỗi |
+
+**Quy tắc thực hành:** ràng buộc đặt **trong CSDL** luôn đúng cho mọi ứng dụng truy cập, còn kiểm tra chỉ ở ứng dụng thì dễ bị bỏ sót. Ưu tiên theo thứ tự: ràng buộc → `VIEW`/truy vấn → trigger/procedure (khi không còn cách khác).
+
+---
+
+## CHƯƠNG 18: CHUẨN HÓA DỮ LIỆU CƠ BẢN (1NF, 2NF, 3NF)
+
+> **Mức độ:** 🟡 *Nên học* (khái niệm giúp thiết kế bảng đúng), không cần học sâu lý thuyết quan hệ.
+> Tất cả ví dụ dựa trên dữ liệu `shop_db`; việc ghép 5 bảng chuẩn hóa lại cho đúng 23 dòng đã được kiểm chứng bằng SQLite.
+
+### 18.1. Vấn đề: bảng "tất cả trong một" và sự dư thừa
+
+**Khái niệm:** **Chuẩn hóa** là quá trình tách bảng để **mỗi sự việc chỉ được ghi ở một nơi**, tránh dư thừa và sai lệch dữ liệu.
+
+Giả sử chủ cửa hàng ghi mọi thứ vào **một bảng phẳng** `ORDER_FLAT` (trích 6 dòng của các đơn 1–3):
+
+| OrderID | CustName | City | ProdName | Category | Quantity | UnitPrice | EmpName |
+|---|---|---|---|---|---|---|---|
+| 1 | Nguyen Van An | Ha Noi | Laptop Dell | Electronics | 1 | 15000 | Nguyen Thu Ha |
+| 1 | Nguyen Van An | Ha Noi | Mouse Logitech | Accessories | 2 | 300 | Nguyen Thu Ha |
+| 2 | Nguyen Van An | Ha Noi | Monitor 24 inch | Electronics | 2 | 4000 | Nguyen Thu Ha |
+| 2 | Nguyen Van An | Ha Noi | Keyboard Mechanical | Accessories | 1 | 1200 | Nguyen Thu Ha |
+| 3 | Tran Thi Binh | Ho Chi Minh | Smartphone | Electronics | 2 | 9000 | Tran Quoc Huy |
+| 3 | Tran Thi Binh | Ho Chi Minh | Headphone | Accessories | 1 | 800 | Tran Quoc Huy |
+
+Tên khách, thành phố, tên nhân viên **lặp lại ở nhiều dòng**. Hậu quả gọi là **dị thường (anomaly)**:
+
+| Dị thường | Ví dụ | Hậu quả |
+|---|---|---|
+| **Cập nhật** | An chuyển nhà sang Da Nang: phải sửa **mọi** dòng của An (6 dòng trong toàn bộ bảng đầy đủ) | Sửa sót một dòng → cùng một khách có hai thành phố |
+| **Thêm** | Có sản phẩm mới `Webcam` chưa ai mua | Không có chỗ lưu nếu chưa có đơn (không có `OrderID`) |
+| **Xóa** | Xóa đơn duy nhất của một khách | Mất luôn thông tin khách đó |
+
+Chuẩn hóa tách bảng sao cho các dị thường này biến mất.
+
+### 18.2. Dạng chuẩn 1 (1NF): giá trị nguyên tử, không nhóm lặp
+
+**Quy tắc:** mỗi ô chỉ chứa **một giá trị** (không danh sách), và không có các cột lặp kiểu `Phone1, Phone2, Phone3`.
+
+❌ **Vi phạm 1NF:**
+| OrderID | CustName | Products |
+|---|---|---|
+| 1 | Nguyen Van An | Laptop Dell, Mouse Logitech |
+
+Không thể lọc "đơn có Mouse", không thể `JOIN` theo sản phẩm, khó đếm.
+
+✅ **Sửa:** mỗi sản phẩm một dòng (đúng như `ORDER_FLAT` ở trên, hoặc tốt hơn là bảng `ORDER_DETAIL`).
+
+### 18.3. Dạng chuẩn 2 (2NF): không phụ thuộc một phần vào khóa
+
+**Điều kiện áp dụng:** bảng có **khóa gồm nhiều cột**. Trong `ORDER_FLAT` khóa là `(OrderID, ProdName)`.
+
+**Quy tắc:** mỗi cột không thuộc khóa phải phụ thuộc **toàn bộ khóa**, không chỉ một phần.
+
+| Cột | Phụ thuộc vào | Đánh giá |
+|---|---|---|
+| `Quantity` | cả `(OrderID, Product)` (số lượng *của sản phẩm đó trong đơn đó*) | ✅ đúng chỗ |
+| `UnitPrice` (giá lúc bán) | cả cặp (giá có thể thay đổi theo thời điểm đơn) | ✅ đúng chỗ |
+| `CustName`, `City`, `EmpName` | chỉ `OrderID` | ❌ phụ thuộc **một phần** khóa |
+| `Category` | chỉ `ProdName` | ❌ phụ thuộc **một phần** khóa |
+
+✅ **Sửa:** tách thông tin về **đơn** (khách, nhân viên) và về **sản phẩm** ra bảng riêng: `SALEORDER`, `PRODUCT`; giữ lại `ORDER_DETAIL(OrderID, ProdID, Quantity, UnitPrice)`.
+
+### 18.4. Dạng chuẩn 3 (3NF): không phụ thuộc bắc cầu
+
+**Quy tắc:** cột không thuộc khóa **không được phụ thuộc vào một cột không thuộc khóa khác**. Mỗi cột phải mô tả "**khóa, toàn bộ khóa và chỉ khóa**".
+
+Sau bước 2NF, bảng `SALEORDER` nếu còn chứa `CustName, City`:
+`OrderID → CustName → City`: thành phố **không phải của đơn**, mà là của **khách**. Đây là phụ thuộc bắc cầu.
+
+✅ **Sửa:** tách `CUSTOMER(CustID, CustName, City...)`; `SALEORDER` chỉ giữ `CustID` (khóa ngoại). Tương tự `EMPLOYEE`.
+
+### 18.5. Kết quả: lược đồ `shop_db` chính là dạng 3NF
+
+| Thông tin | Bảng đúng chỗ | Khóa |
+|---|---|---|
+| Khách hàng (tên, thành phố, email) | `CUSTOMER` | `CustID` |
+| Nhân viên | `EMPLOYEE` | `EmpID` |
+| Sản phẩm (tên, nhóm hàng, giá hiện tại, tồn) | `PRODUCT` | `ProdID` |
+| Đơn hàng (ai mua, ai bán, ngày, trạng thái) | `SALEORDER` | `OrderID` |
+| Dòng chi tiết (số lượng, đơn giá lúc bán) | `ORDER_DETAIL` | `(OrderID, ProdID)` |
+
+**Kiểm chứng tách không mất thông tin:** `JOIN` lại 5 bảng cho **đúng 23 dòng** như bảng phẳng gốc (mỗi dòng chi tiết một dòng). Các dị thường đã mất: đổi thành phố của An chỉ sửa **1 dòng** ở `CUSTOMER`; thêm `Webcam` không cần đơn; xóa đơn không mất khách.
+
+### 18.6. Khi nào được phép "phi chuẩn hóa" có chủ đích
+
+Chuẩn hóa tối đa không phải lúc nào cũng tốt nhất. Trong `shop_db` có hai chỗ **dư thừa có chủ đích**:
+
+| Cột | Vì sao chấp nhận dư thừa | Rủi ro và cách kiểm soát |
+|---|---|---|
+| `SALEORDER.TotalAmount` (tính được từ chi tiết) | Xem tổng đơn nhanh, không phải `SUM` mỗi lần | Có thể lệch với chi tiết. Kiểm tra bằng truy vấn ở mục 19.3, hoặc dùng trigger (17.3) |
+| `ORDER_DETAIL.UnitPrice` (giống `PRODUCT.Price`) | **Giá lúc bán phải được giữ nguyên** dù sau này giá sản phẩm đổi | Đây không phải dư thừa thật: là dữ liệu lịch sử |
+
+**Nguyên tắc:** cứ chuẩn hóa đến 3NF trước; chỉ phi chuẩn hóa khi có lý do đo được (hiệu năng báo cáo) và **có cơ chế bảo đảm nhất quán**.
+
+### 18.7. Lỗi thường gặp
+
+| Lỗi | Dấu hiệu |
+|---|---|
+| Nhét danh sách vào một ô (`'Laptop, Mouse'`) | Vi phạm 1NF; khó lọc |
+| Lặp thông tin khách trong bảng đơn | Vi phạm 2NF/3NF; sửa phải sửa nhiều nơi |
+| Dùng tên (`CustName`) làm khóa | Tên đổi hoặc trùng → hỏng liên kết; dùng ID nhân tạo |
+| Tách quá mức khiến truy vấn cần `JOIN` quá nhiều bảng không cần thiết | Cân bằng với nhu cầu thực tế |
+
+### 18.8. Bài tập tự luyện Chương 18
+
+Bảng `STUDENT_COURSE` ghi điểm sinh viên:
+
+| StudentID | StudentName | CourseID | CourseName | Teacher | Grade |
+|---|---|---|---|---|---|
+| 1 | An | C1 | SQL | Nguyen A | 8.5 |
+| 1 | An | C2 | Python | Tran B | 9.0 |
+| 2 | Binh | C1 | SQL | Nguyen A | 7.0 |
+
+1. Khóa của bảng là gì? 2. Chỉ ra dị thường và các phụ thuộc vi phạm 2NF/3NF. 3. Đề xuất các bảng sau chuẩn hóa.
+
+<details><summary>Đáp án</summary>
+
+1. Khóa là `(StudentID, CourseID)`.
+2. `StudentName` chỉ phụ thuộc `StudentID` và `CourseName`, `Teacher` chỉ phụ thuộc `CourseID` → phụ thuộc **một phần** khóa (vi phạm 2NF). Hậu quả: tên "An" và môn "SQL"/giáo viên "Nguyen A" lặp lại; đổi giáo viên môn SQL phải sửa nhiều dòng; không thể thêm môn mới khi chưa có sinh viên đăng ký.
+3. Ba bảng:
+```sql
+STUDENT(StudentID PK, StudentName)
+COURSE(CourseID PK, CourseName, Teacher)
+ENROLLMENT(StudentID FK, CourseID FK, Grade, PRIMARY KEY (StudentID, CourseID))
+```
+Nếu `Teacher` có thêm thông tin riêng (email, khoa) thì nên tách `TEACHER` để tránh phụ thuộc bắc cầu `CourseID → Teacher → Email`.
+</details>
+
+---
+
+## CHƯƠNG 19: KỸ THUẬT THỰC HÀNH BỔ SUNG
+
+> **Mức độ:** 🟡 *Nên học*. Chương này **bổ sung các kỹ năng còn thiếu** (tìm/xóa trùng, phân trang đúng cách, kiểm tra chất lượng dữ liệu) và có bảng chỉ dẫn các kỹ năng thực hành **đã được giải thích ở chương khác** để anh không phải tìm lại.
+> Các truy vấn trong chương đã được đối chiếu bằng SQLite (logic và số liệu). Cú pháp `DELETE ... JOIN`, `DATE_FORMAT`... cần chạy thử trên MySQL (Phụ lục F).
+
+### 19.1. Tìm và xóa bản ghi trùng lặp an toàn
+
+**Dùng để làm gì:** dữ liệu nhập từ file/biểu mẫu thường bị lặp (cùng một khách nhập hai lần). Cần phát hiện, xem xét rồi xóa phần thừa mà không mất nhầm dữ liệu.
+
+**Dữ liệu mẫu** (bảng nhập khách hàng có trùng):
+```sql
+CREATE TABLE CUSTOMER_IMPORT (
+    ImportID INT AUTO_INCREMENT PRIMARY KEY,
+    CustName VARCHAR(100) NOT NULL,
+    Phone    VARCHAR(15)  NOT NULL,
+    Email    VARCHAR(100) NULL
+);
+INSERT INTO CUSTOMER_IMPORT (CustName, Phone, Email) VALUES
+('An',    '0901000001', 'an@mail.com'),       -- 1
+('Binh',  '0901000002', 'binh@mail.com'),     -- 2
+('An',    '0901000001', 'an@mail.com'),       -- 3  (trùng dòng 1)
+('Cuong', '0901000003', NULL),                -- 4
+('Binh',  '0901000002', 'binh2@mail.com'),    -- 5  (cùng SĐT dòng 2, khác email)
+('An',    '0901000001', 'an@mail.com');       -- 6  (trùng dòng 1)
+```
+
+**Bước 1: Định nghĩa "trùng".** Quyết định cột nào quyết định sự trùng: ở đây **cùng `Phone`** là cùng một khách. (Cũng có thể định nghĩa trùng khi cả `CustName, Phone, Email` đều giống.)
+
+**Bước 2: Tìm nhóm trùng bằng `GROUP BY ... HAVING COUNT(*) > 1`.**
+```sql
+SELECT Phone, COUNT(*) AS SoLan FROM CUSTOMER_IMPORT GROUP BY Phone HAVING COUNT(*) > 1;
+```
+| Phone | SoLan |
+|---|---|
+| 0901000001 | 3 |
+| 0901000002 | 2 |
+
+Nếu muốn trùng **toàn bộ** các cột: `GROUP BY CustName, Phone, Email HAVING COUNT(*) > 1` → chỉ `An | 0901000001 | an@mail.com | 3` (dòng 2 và 5 khác email nên không phải trùng hoàn toàn).
+
+**Bước 3: Liệt kê từng dòng thừa bằng `ROW_NUMBER()`** (giữ dòng có `ImportID` nhỏ nhất của mỗi `Phone`):
+```sql
+SELECT ImportID, CustName, Phone, Email, rn
+FROM (
+    SELECT *, ROW_NUMBER() OVER (PARTITION BY Phone ORDER BY ImportID) AS rn
+    FROM CUSTOMER_IMPORT
+) AS t
+WHERE rn > 1;
+```
+| ImportID | CustName | Phone | Email | rn |
+|---|---|---|---|---|
+| 3 | An | 0901000001 | an@mail.com | 2 |
+| 5 | Binh | 0901000002 | binh2@mail.com | 2 |
+| 6 | An | 0901000001 | an@mail.com | 3 |
+
+`rn = 1` là dòng **được giữ**; `rn > 1` là dòng thừa. Muốn giữ dòng **mới nhất** thì đổi `ORDER BY ImportID DESC`.
+
+**Bước 4: Xem xét bằng mắt.** Dòng 5 (`binh2@mail.com`) có **email khác** dòng 2. Xóa tự động có thể làm mất một email mới hơn. Đây là quyết định nghiệp vụ: gộp dữ liệu hay giữ dòng nào.
+
+**Bước 5: Sao lưu rồi xóa trong giao dịch.**
+```sql
+CREATE TABLE CUSTOMER_IMPORT_BAK AS SELECT * FROM CUSTOMER_IMPORT;      -- sao lưu
+
+START TRANSACTION;
+DELETE FROM CUSTOMER_IMPORT
+WHERE ImportID IN (
+    SELECT ImportID
+    FROM (
+        SELECT ImportID, ROW_NUMBER() OVER (PARTITION BY Phone ORDER BY ImportID) AS rn
+        FROM CUSTOMER_IMPORT
+    ) AS t
+    WHERE rn > 1
+);
+SELECT * FROM CUSTOMER_IMPORT;       -- kiểm tra trước khi quyết định
+COMMIT;                               -- hoặc ROLLBACK nếu chưa đúng
+```
+**Kết quả sau khi xóa:**
+| ImportID | CustName | Phone | Email |
+|---|---|---|---|
+| 1 | An | 0901000001 | an@mail.com |
+| 2 | Binh | 0901000002 | binh@mail.com |
+| 4 | Cuong | 0901000003 | NULL |
+
+**Cách khác:** xóa bằng tự `JOIN`: giữ `ImportID` nhỏ nhất của mỗi `Phone`.
+```sql
+DELETE a
+FROM CUSTOMER_IMPORT a
+JOIN CUSTOMER_IMPORT b ON a.Phone = b.Phone AND a.ImportID > b.ImportID;
+```
+(Cùng tập dòng bị xóa: 3, 5, 6.)
+
+**Bước 6: Ngăn trùng từ đầu bằng ràng buộc.**
+```sql
+ALTER TABLE CUSTOMER_IMPORT ADD CONSTRAINT uq_import_phone UNIQUE (Phone);   -- chỉ thêm được khi đã hết trùng
+```
+
+**Bẫy với NULL:** nếu định nghĩa trùng gồm cột có thể `NULL` (ví dụ `Email`): `a.Email = b.Email` **không bao giờ đúng** khi cả hai là NULL, nên tự `JOIN` bỏ sót; dùng `a.Email <=> b.Email` (so sánh an toàn với NULL của MySQL). `GROUP BY` và `PARTITION BY` thì coi các NULL là **cùng một nhóm**.
+
+**Lỗi thường gặp:**
+| Lỗi | Hậu quả | Cách tránh |
+|---|---|---|
+| Xóa mà không `SELECT` xem trước | Mất dữ liệu khó khôi phục | Luôn xem trước, sao lưu, dùng transaction |
+| Dùng `DELETE ... WHERE id NOT IN (SELECT MIN(id) ... GROUP BY ...)` trên cùng bảng không bọc đúng | Có thể gặp lỗi 1093 | Dùng bảng dẫn xuất có gộp nhóm/window như trên |
+| Bỏ qua dòng trùng một phần (khác email) | Mất thông tin mới | Xem xét thủ công trước |
+| Không thêm `UNIQUE` | Trùng lại lần sau | Thêm ràng buộc |
+
+**Bài tập:** xóa trùng theo `Phone` nhưng **giữ dòng mới nhất** (`ImportID` lớn nhất) từ dữ liệu gốc (trước khi xóa ở trên).
+<details><summary>Đáp án</summary>
+
+```sql
+DELETE FROM CUSTOMER_IMPORT
+WHERE ImportID IN (
+    SELECT ImportID FROM (
+        SELECT ImportID, ROW_NUMBER() OVER (PARTITION BY Phone ORDER BY ImportID DESC) AS rn
+        FROM CUSTOMER_IMPORT
+    ) AS t
+    WHERE rn > 1
+);
+```
+→ Giữ `ImportID` 4, 5, 6 (xóa 1, 2, 3): `0901000001` giữ dòng 6, `0901000002` giữ dòng 5, `0901000003` chỉ có dòng 4.
+</details>
+
+### 19.2. Phân trang đúng cách
+
+**Công thức đã học (mục 4.11):** trang `p`, mỗi trang `n` dòng → `LIMIT n OFFSET (p - 1) * n`. Số trang = `CEIL(tổng_dòng / n)`.
+
+**Ví dụ:** 12 đơn, 3 đơn/trang, sắp theo ngày rồi theo `OrderID`.
+```sql
+SELECT OrderID, OrderDate FROM SALEORDER ORDER BY OrderDate, OrderID LIMIT 3 OFFSET 0;   -- trang 1: đơn 1, 2, 3
+SELECT OrderID, OrderDate FROM SALEORDER ORDER BY OrderDate, OrderID LIMIT 3 OFFSET 3;   -- trang 2: đơn 4, 5, 6
+SELECT OrderID, OrderDate FROM SALEORDER ORDER BY OrderDate, OrderID LIMIT 3 OFFSET 9;   -- trang 4: đơn 10, 11, 12
+SELECT CEIL(COUNT(*) / 3) AS SoTrang FROM SALEORDER;                                       -- 4
+```
+**Quy tắc 1: `ORDER BY` phải xác định duy nhất thứ tự.** Nếu sắp theo cột có giá trị trùng (ví dụ `ORDER BY Status`), các dòng cùng giá trị có thể **đổi thứ tự giữa hai lần truy vấn** → trang 1 và trang 2 lặp hoặc mất dòng. **Luôn thêm một cột duy nhất** (thường là khóa chính) vào cuối `ORDER BY`.
+
+**Quy tắc 2: `OFFSET` lớn thì chậm.** `OFFSET 1000000` buộc MySQL đi qua một triệu dòng rồi bỏ đi. Với bảng lớn, dùng **phân trang theo khóa (keyset)**: nhớ dòng cuối của trang trước.
+```sql
+-- Trang sau của trang chứa đơn 4–6, dùng khóa chính
+SELECT OrderID FROM SALEORDER WHERE OrderID > 6 ORDER BY OrderID LIMIT 3;        -- đơn 7, 8, 9
+
+-- Sắp theo ngày + khóa chính: nhớ (OrderDate, OrderID) của dòng cuối trang trước = ('2025-03-12', 5)
+SELECT OrderID, OrderDate
+FROM SALEORDER
+WHERE OrderDate > '2025-03-12'
+   OR (OrderDate = '2025-03-12' AND OrderID > 5)
+ORDER BY OrderDate, OrderID
+LIMIT 3;                                                                          -- đơn 6, 7, 8
+```
+Keyset nhanh và ổn định khi dữ liệu thay đổi, nhưng chỉ đi **trang kế tiếp/trước**, không nhảy tới "trang số 50" tùy ý.
+
+**Quy tắc 3: tổng số dòng** lấy bằng `SELECT COUNT(*)` riêng. `SQL_CALC_FOUND_ROWS` / `FOUND_ROWS()` đã bị **deprecated từ MySQL 8.0.17**, không nên dùng.
+
+**Lỗi thường gặp:** quên `ORDER BY` khi dùng `LIMIT` (trang bất định); `OFFSET` tính sai (dùng `p * n` thay vì `(p-1) * n`); tin rằng trang cuối luôn đủ `n` dòng.
+
+### 19.3. Kiểm tra chất lượng và tính nhất quán của dữ liệu
+
+Các truy vấn "kiểm tra sức khỏe" nên chạy định kỳ, **kết quả mong đợi là rỗng**:
+
+| Kiểm tra | Truy vấn | Kỳ vọng với dữ liệu gốc |
+|---|---|---|
+| Đơn không có dòng chi tiết | `SELECT o.OrderID FROM SALEORDER o LEFT JOIN ORDER_DETAIL od ON od.OrderID = o.OrderID WHERE od.OrderID IS NULL;` | Rỗng |
+| `TotalAmount` lệch tổng chi tiết | (xem dưới) | Rỗng |
+| Số lượng/giá âm hoặc bằng 0 | `SELECT * FROM ORDER_DETAIL WHERE Quantity <= 0 OR UnitPrice < 0;` | Rỗng |
+| Khách thiếu thông tin liên hệ | `SELECT CustID FROM CUSTOMER WHERE Email IS NULL AND Phone IS NULL;` | Rỗng (Phone `NOT NULL`) |
+
+**Kiểm tra `TotalAmount` (dữ liệu dư thừa có chủ đích, xem 18.6):**
+```sql
+SELECT o.OrderID, o.TotalAmount, SUM(od.Quantity * od.UnitPrice) AS TinhLai,
+       o.TotalAmount - SUM(od.Quantity * od.UnitPrice) AS ChenhLech
+FROM SALEORDER o
+JOIN ORDER_DETAIL od ON od.OrderID = o.OrderID
+GROUP BY o.OrderID, o.TotalAmount
+HAVING o.TotalAmount <> SUM(od.Quantity * od.UnitPrice);
+```
+Với dữ liệu gốc: **rỗng**. Thử làm lệch rồi kiểm tra:
+```sql
+START TRANSACTION;
+UPDATE SALEORDER SET TotalAmount = 15000 WHERE OrderID = 1;   -- cố ý làm sai
+-- chạy lại câu kiểm tra → (OrderID 1, TotalAmount 15000.00, TinhLai 15600.00, ChenhLech -600.00)
+ROLLBACK;                                                      -- trả về như cũ
+```
+Cột `TotalAmount` được lưu trong `SALEORDER` nên có thể lệch; truy vấn này tìm đúng những đơn lệch.
+
+### 19.4. Bản đồ các kỹ năng thực hành đã có ở chương khác
+
+| Kỹ năng | Nơi đã giải thích | Ví dụ tiêu biểu |
+|---|---|---|
+| Xử lý `NULL`, `COALESCE`, `IFNULL`, điều kiện NULL | 1.5, 4.9, 5.D | `COALESCE(Email, Phone)` |
+| `CASE WHEN` trong truy vấn và `UPDATE` | 3.6.9, 5.E, VD7, VD8, VD23 | Phân hạng khách, pivot |
+| Hàm ngày/giờ, lọc theo ngày/tháng/năm | 5.F, VD22, VD24 | Doanh thu theo quý, theo tháng |
+| Xử lý chuỗi, chuyển kiểu dữ liệu | 5.A, 5.G | `SUBSTRING_INDEX`, `CAST` |
+| Xếp hạng, lớn nhất/nhỏ nhất theo nhóm | 10.5, Dạng 14, VD26, VD29 | `ROW_NUMBER`, `RANK` |
+| Top N theo nhóm bằng Window Functions | 10.5, VD26, K1 (mục 20) | Đơn lớn nhất mỗi khách |
+| Tìm bản ghi không có quan hệ | 6.3, 8.4, VD16, VD17 | `LEFT JOIN ... IS NULL`, `NOT EXISTS` |
+| Lỗi khi kết hợp `JOIN` với hàm tổng hợp | 6.10 | Tổng bị nhân dòng |
+| Cách đọc đề và xây truy vấn từng bước | Chương 12, 14 | Quy trình 10 câu hỏi |
+| **Tìm/xóa trùng lặp** | **19.1 (mới)** | `ROW_NUMBER`, `GROUP BY` |
+| **Phân trang nâng cao** | **19.2 (mới)**, 4.11 | Keyset |
+| **Kiểm tra chất lượng dữ liệu** | **19.3 (mới)** | Kiểm tra `TotalAmount` |
+
+### 19.5. Tổng hợp các "bẫy NULL"
+
+| Bẫy | Chi tiết ở |
+|---|---|
+| `= NULL` luôn không đúng, phải `IS NULL` | 1.5, 4.9 |
+| `NOT IN (... NULL ...)` cho kết quả rỗng | 4.7, 8.3 |
+| `COUNT(cột)` bỏ NULL, `COUNT(*)` không | 5.C, 7.5 |
+| `SUM` của tập rỗng là NULL | 5.C |
+| `CONCAT` với NULL ra NULL (`CONCAT_WS` bỏ qua) | 5.A |
+| `AVG` bỏ NULL khỏi mẫu số | 5.C |
+| `LEFT JOIN` + điều kiện bảng phải ở `WHERE` biến thành `INNER JOIN` | 6.8 |
+| `UNIQUE` cho phép nhiều NULL | 2.11.7 |
+| `GROUP BY`/`PARTITION BY` coi các NULL là một nhóm; `=` giữa hai NULL không đúng | 7.13, 19.1 |
+
+---
+
+## CHƯƠNG 20: BỘ BÀI TẬP PHÂN CẤP
+
+> **Cách dùng:** (1) chạy lại `shop_db_reset.sql` (Phụ lục D); (2) đọc **đề, bảng liên quan, kết quả mong đợi** và **tự viết** truy vấn; (3) chỉ mở phần *Gợi ý và lời giải* khi đã thử xong.
+> **Độ tin cậy:** các đáp án đã được chạy trên SQLite (các hàm ngày tháng quy đổi sang `strftime`/`julianday`) và **kết quả khớp** bảng "kết quả mong đợi". Cú pháp MySQL (`DATE_FORMAT`, `DATEDIFF`) cần chạy lại trên MySQL.
+> Các bài **không lặp** lại bài ở Chương 13/14: chúng đánh vào các góc nhìn khác (cách kết hợp mới, `LAG`, kiểm tra dữ liệu...).
+
+### MỨC 1: CƠ BẢN (`SELECT`, `WHERE`, sắp xếp, hàm tổng hợp)
+
+**Bài CB1.** Liệt kê tên và tồn kho của các sản phẩm có tồn kho **dưới 50**, sắp từ ít đến nhiều.
+*Bảng liên quan:* `PRODUCT(ProdName, Stock)`.
+*Kết quả mong đợi:*
+| ProdName | Stock |
+|---|---|
+| Webcam | 15 |
+| Laptop Dell | 20 |
+| Smartphone | 25 |
+| Monitor 24 inch | 30 |
+| Headphone | 40 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) lấy hai cột; (2) lọc `Stock < 50` ("dưới" nghĩa là nhỏ hơn, không bằng); (3) `ORDER BY Stock`.
+```sql
+SELECT ProdName, Stock FROM PRODUCT WHERE Stock < 50 ORDER BY Stock;
+```
+*Giải thích:* Keyboard có tồn đúng 50 nên bị loại vì `<` không gồm biên.
+</details>
+
+**Bài CB2.** Có bao nhiêu khách **có** email và bao nhiêu khách **không có** email?
+*Bảng:* `CUSTOMER(Email)`. *Kết quả:* `CoEmail = 4`, `KhongEmail = 2`.
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* `COUNT(Email)` bỏ qua NULL; `COUNT(*)` đếm mọi dòng.
+```sql
+SELECT COUNT(Email) AS CoEmail, COUNT(*) - COUNT(Email) AS KhongEmail FROM CUSTOMER;
+```
+</details>
+
+**Bài CB3.** Các đơn (mọi trạng thái) đặt trong **quý 2/2025** (tháng 4–6) có tổng từ 2000 trở lên.
+*Bảng:* `SALEORDER`. *Kết quả:*
+| OrderID | OrderDate | Status | TotalAmount |
+|---|---|---|---|
+| 7 | 2025-04-15 | COMPLETED | 13000.00 |
+| 8 | 2025-05-02 | COMPLETED | 4500.00 |
+| 9 | 2025-05-20 | COMPLETED | 19000.00 |
+| 10 | 2025-06-08 | PENDING | 9000.00 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* quý 2 = từ `2025-04-01` đến trước `2025-07-01`; dùng khoảng nửa mở.
+```sql
+SELECT OrderID, OrderDate, Status, TotalAmount
+FROM SALEORDER
+WHERE OrderDate >= '2025-04-01' AND OrderDate < '2025-07-01' AND TotalAmount >= 2000
+ORDER BY OrderID;
+```
+*Giải thích:* đơn 6 (1600) và đơn 11 (1700) trong quý nhưng dưới 2000 nên bị loại.
+</details>
+
+**Bài CB4.** Giá cao nhất, thấp nhất và trung bình của nhóm **Accessories**.
+*Kết quả:* `1200.00 | 250.00 | 650.000000`.
+<details><summary>Gợi ý và lời giải</summary>
+
+```sql
+SELECT MAX(Price) AS CaoNhat, MIN(Price) AS ThapNhat, AVG(Price) AS TrungBinh
+FROM PRODUCT WHERE Category = 'Accessories';
+```
+*Giải thích:* `WHERE` lọc nhóm hàng **trước** khi tính các hàm tổng hợp.
+</details>
+
+**Bài CB5.** Khách có tên bắt đầu bằng chữ **H** hoặc **P**, sắp theo `CustID`.
+*Kết quả:* `Pham Thi Dung`, `Hoang Van Em`.
+<details><summary>Gợi ý và lời giải</summary>
+
+```sql
+SELECT CustName FROM CUSTOMER
+WHERE CustName LIKE 'H%' OR CustName LIKE 'P%'
+ORDER BY CustID;
+```
+*Giải thích:* `'Vu Thi Phuong'` có chữ P nhưng **không ở đầu** tên nên không khớp `'P%'`.
+</details>
+
+### MỨC 2: TRUNG BÌNH (`JOIN`, `GROUP BY`, `HAVING`, subquery)
+
+**Bài TB1.** Thành phố nào có **tổng doanh thu COMPLETED** của khách cao nhất? Hiển thị thành phố và doanh thu.
+*Bảng:* `CUSTOMER`, `SALEORDER`. *Kết quả:* `Ho Chi Minh | 61800.00`.
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) nối khách với đơn; (2) `WHERE Status='COMPLETED'`; (3) gom theo thành phố; (4) sắp giảm, lấy 1 dòng.
+```sql
+SELECT c.City, SUM(o.TotalAmount) AS DoanhThu
+FROM CUSTOMER c JOIN SALEORDER o ON o.CustID = c.CustID
+WHERE o.Status = 'COMPLETED'
+GROUP BY c.City
+ORDER BY DoanhThu DESC
+LIMIT 1;
+```
+*Giải thích:* HCM = Binh 42800 + Em 19000 = 61800. Nếu cần lấy cả thành phố đồng hạng, thay `LIMIT 1` bằng `HAVING SUM(...) = (SELECT MAX(...) ...)` hoặc `RANK()`.
+</details>
+
+**Bài TB2.** Với mỗi nhân viên có đơn: ngày của **đơn đầu tiên** và **đơn gần nhất**.
+*Kết quả:*
+| EmpName | DauTien | GanNhat |
+|---|---|---|
+| Nguyen Thu Ha | 2025-01-05 | 2025-07-07 |
+| Tran Quoc Huy | 2025-02-14 | 2025-06-08 |
+| Le Thi Lan | 2025-04-01 | 2025-06-25 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+```sql
+SELECT e.EmpName, MIN(o.OrderDate) AS DauTien, MAX(o.OrderDate) AS GanNhat
+FROM EMPLOYEE e JOIN SALEORDER o ON o.EmpID = e.EmpID
+GROUP BY e.EmpID, e.EmpName
+ORDER BY e.EmpID;
+```
+*Giải thích:* `MIN`/`MAX` dùng được cho cột ngày. `INNER JOIN` nên nhân viên chưa có đơn (Quan, Minh) không xuất hiện.
+</details>
+
+**Bài TB3.** Sản phẩm được **ít nhất 3 khách khác nhau** mua (mọi đơn).
+*Kết quả:*
+| ProdName | SoKhach |
+|---|---|
+| Laptop Dell | 4 |
+| Monitor 24 inch | 3 |
+| Headphone | 3 |
+| Smartphone | 3 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* đường nối `PRODUCT – ORDER_DETAIL – SALEORDER` (để lấy `CustID`); đếm **khách khác nhau** nên cần `COUNT(DISTINCT ...)`.
+```sql
+SELECT p.ProdName, COUNT(DISTINCT o.CustID) AS SoKhach
+FROM PRODUCT p
+JOIN ORDER_DETAIL od ON od.ProdID = p.ProdID
+JOIN SALEORDER o ON o.OrderID = od.OrderID
+GROUP BY p.ProdID, p.ProdName
+HAVING COUNT(DISTINCT o.CustID) >= 3
+ORDER BY p.ProdID;
+```
+*Giải thích:* Laptop có khách 1, 2, 3, 5 (4 khách); Mouse chỉ khách 1 và 3 nên bị loại.
+</details>
+
+**Bài TB4.** Khách **có đơn COMPLETED nhưng không có đơn PENDING nào**.
+*Kết quả:* `Nguyen Van An`, `Tran Thi Binh`, `Pham Thi Dung`.
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* hai điều kiện trên hai tập đơn khác nhau của cùng một khách → `EXISTS` + `NOT EXISTS`.
+```sql
+SELECT c.CustName
+FROM CUSTOMER c
+WHERE EXISTS     (SELECT 1 FROM SALEORDER o WHERE o.CustID = c.CustID AND o.Status = 'COMPLETED')
+  AND NOT EXISTS (SELECT 1 FROM SALEORDER o WHERE o.CustID = c.CustID AND o.Status = 'PENDING')
+ORDER BY c.CustID;
+```
+*Giải thích:* khách 3 và 5 có đơn PENDING (6, 10) nên bị loại; khách 6 không có đơn COMPLETED.
+</details>
+
+**Bài TB5.** Các đơn có tổng **lớn hơn mức trung bình tổng đơn của chính nhân viên lập đơn đó**.
+*Kết quả:*
+| OrderID | EmpID | TotalAmount |
+|---|---|---|
+| 3 | 3 | 18800.00 |
+| 4 | 3 | 15000.00 |
+| 5 | 2 | 30300.00 |
+| 8 | 4 | 4500.00 |
+| 12 | 2 | 24000.00 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* "của chính nhân viên đó" → subquery tương quan theo `EmpID`. Trung bình: NV2 = 19620, NV3 = 13950, NV4 = 2600.
+```sql
+SELECT o.OrderID, o.EmpID, o.TotalAmount
+FROM SALEORDER o
+WHERE o.TotalAmount > (SELECT AVG(o2.TotalAmount) FROM SALEORDER o2 WHERE o2.EmpID = o.EmpID)
+ORDER BY o.OrderID;
+```
+</details>
+
+### MỨC 3: KHÁ (CTE, Window Functions, truy vấn nhiều bước)
+
+**Bài K1.** **Hai đơn COMPLETED lớn nhất** của mỗi khách (nếu có ít hơn hai thì lấy bấy nhiêu).
+*Kết quả:*
+| CustID | OrderID | TotalAmount |
+|---|---|---|
+| 1 | 1 | 15600.00 |
+| 1 | 2 | 9200.00 |
+| 2 | 12 | 24000.00 |
+| 2 | 3 | 18800.00 |
+| 3 | 5 | 30300.00 |
+| 4 | 7 | 13000.00 |
+| 4 | 8 | 4500.00 |
+| 5 | 9 | 19000.00 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) lọc COMPLETED; (2) `ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY TotalAmount DESC)`; (3) bọc CTE rồi `rn <= 2`.
+```sql
+WITH r AS (
+    SELECT CustID, OrderID, TotalAmount,
+           ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY TotalAmount DESC) AS rn
+    FROM SALEORDER
+    WHERE Status = 'COMPLETED'
+)
+SELECT CustID, OrderID, TotalAmount FROM r WHERE rn <= 2 ORDER BY CustID, rn;
+```
+</details>
+
+**Bài K2.** Doanh thu COMPLETED mỗi tháng, **chênh lệch so với tháng trước**.
+*Kết quả:* xem bảng ở mục **10.9** (tháng 2025-01 chênh lệch `NULL`; 02: +12400; 03: +2300; 04: -17300; 05: +10500; 06: -21800; 07: +22300).
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) CTE doanh thu theo tháng; (2) `LAG(DoanhThu) OVER (ORDER BY Thang)` lấy tháng trước; (3) trừ.
+Lời giải đầy đủ ở mục **10.9**.
+</details>
+
+**Bài K3.** Khách đã mua sản phẩm thuộc **cả hai nhóm hàng** (Electronics và Accessories).
+*Kết quả:* `Nguyen Van An`, `Tran Thi Binh`, `Le Van Cuong`, `Pham Thi Dung` (khách Em chỉ mua Electronics).
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* nối khách → đơn → chi tiết → sản phẩm; gom theo khách; đòi `COUNT(DISTINCT Category) = 2`.
+```sql
+SELECT c.CustName
+FROM CUSTOMER c
+JOIN SALEORDER o ON o.CustID = c.CustID
+JOIN ORDER_DETAIL od ON od.OrderID = o.OrderID
+JOIN PRODUCT p ON p.ProdID = od.ProdID
+GROUP BY c.CustID, c.CustName
+HAVING COUNT(DISTINCT p.Category) = 2
+ORDER BY c.CustID;
+```
+</details>
+
+**Bài K4.** Với mỗi nhóm hàng, sản phẩm có **doanh thu COMPLETED cao nhất** (lấy cả đồng hạng).
+*Kết quả:*
+| Category | ProdName | DoanhThu |
+|---|---|---|
+| Accessories | Keyboard Mechanical | 3600.00 |
+| Electronics | Laptop Dell | 75000.00 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* hai CTE: (1) doanh thu từng sản phẩm; (2) `RANK() OVER (PARTITION BY Category ORDER BY DoanhThu DESC)`; lấy `hang = 1`.
+```sql
+WITH s AS (
+    SELECT p.Category, p.ProdName, SUM(od.Quantity * od.UnitPrice) AS DoanhThu
+    FROM ORDER_DETAIL od
+    JOIN SALEORDER o ON o.OrderID = od.OrderID
+    JOIN PRODUCT p   ON p.ProdID  = od.ProdID
+    WHERE o.Status = 'COMPLETED'
+    GROUP BY p.ProdID, p.Category, p.ProdName
+), r AS (
+    SELECT *, RANK() OVER (PARTITION BY Category ORDER BY DoanhThu DESC) AS hang FROM s
+)
+SELECT Category, ProdName, DoanhThu FROM r WHERE hang = 1 ORDER BY Category;
+```
+</details>
+
+**Bài K5.** Với mỗi khách, **số ngày giữa hai đơn liên tiếp** (không tính đơn đầu).
+*Kết quả:*
+| CustID | OrderID | OrderDate | SoNgayTuDonTruoc |
+|---|---|---|---|
+| 1 | 2 | 2025-02-10 | 36 |
+| 1 | 11 | 2025-06-25 | 135 |
+| 2 | 4 | 2025-03-03 | 17 |
+| 2 | 12 | 2025-07-07 | 126 |
+| 3 | 6 | 2025-04-01 | 20 |
+| 4 | 8 | 2025-05-02 | 17 |
+| 5 | 10 | 2025-06-08 | 19 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) `LAG(OrderDate) OVER (PARTITION BY CustID ORDER BY OrderDate, OrderID)` lấy ngày đơn trước của **cùng khách**; (2) `DATEDIFF`; (3) bọc CTE rồi loại dòng `NULL`.
+```sql
+WITH g AS (
+    SELECT CustID, OrderID, OrderDate,
+           DATEDIFF(OrderDate,
+                    LAG(OrderDate) OVER (PARTITION BY CustID ORDER BY OrderDate, OrderID)) AS SoNgayTuDonTruoc
+    FROM SALEORDER
+)
+SELECT * FROM g WHERE SoNgayTuDonTruoc IS NOT NULL ORDER BY CustID, OrderDate;
+```
+*Giải thích:* `PARTITION BY CustID` để "đơn trước" luôn là của cùng một khách; đơn đầu của mỗi khách có `LAG = NULL` nên bị loại ở bước cuối.
+</details>
+
+### MỨC 4: NÂNG CAO (tổng hợp, nhiều bảng, nhiều bước)
+
+**Bài NC1.** Báo cáo mỗi nhân viên **có đơn**: số đơn, số đơn COMPLETED, tỷ lệ hoàn thành (%), doanh thu COMPLETED và hạng theo doanh thu.
+*Kết quả:*
+| EmpName | SoDon | SoDonXong | TyLe | DoanhThu | Hang |
+|---|---|---|---|---|---|
+| Nguyen Thu Ha | 5 | 5 | 100.0 | 98100.00 | 1 |
+| Tran Quoc Huy | 4 | 2 | 50.0 | 31800.00 | 2 |
+| Le Thi Lan | 3 | 2 | 66.7 | 6200.00 | 3 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) một câu `GROUP BY` với `COUNT`, `SUM(CASE ...)`; (2) tỷ lệ = đơn xong × 100 / tổng đơn; (3) `RANK() OVER (ORDER BY DoanhThu DESC)` ở bước ngoài (window chạy sau `GROUP BY`).
+```sql
+WITH t AS (
+    SELECT e.EmpName,
+           COUNT(*) AS SoDon,
+           SUM(CASE WHEN o.Status = 'COMPLETED' THEN 1 ELSE 0 END) AS SoDonXong,
+           COALESCE(SUM(CASE WHEN o.Status = 'COMPLETED' THEN o.TotalAmount END), 0) AS DoanhThu
+    FROM EMPLOYEE e JOIN SALEORDER o ON o.EmpID = e.EmpID
+    GROUP BY e.EmpID, e.EmpName
+)
+SELECT EmpName, SoDon, SoDonXong,
+       ROUND(SoDonXong * 100 / SoDon, 1)          AS TyLe,
+       DoanhThu,
+       RANK() OVER (ORDER BY DoanhThu DESC)       AS Hang
+FROM t
+ORDER BY Hang;
+```
+*Giải thích:* `66.7` = 2/3 × 100 làm tròn một chữ số.
+</details>
+
+**Bài NC2.** Cặp sản phẩm **được mua cùng nhau trong nhiều đơn nhất** (cùng xuất hiện trong một đơn).
+*Kết quả:* `Laptop Dell | Mouse Logitech | 2` (đơn 1 và đơn 5). Các cặp khác chỉ cùng xuất hiện 1 lần.
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* tự `JOIN` `ORDER_DETAIL` với chính nó theo `OrderID`, điều kiện `a.ProdID < b.ProdID` để mỗi cặp một lần; gom theo cặp và đếm.
+```sql
+SELECT p1.ProdName AS SanPham1, p2.ProdName AS SanPham2, COUNT(*) AS SoDon
+FROM ORDER_DETAIL a
+JOIN ORDER_DETAIL b ON b.OrderID = a.OrderID AND a.ProdID < b.ProdID
+JOIN PRODUCT p1 ON p1.ProdID = a.ProdID
+JOIN PRODUCT p2 ON p2.ProdID = b.ProdID
+GROUP BY a.ProdID, b.ProdID, p1.ProdName, p2.ProdName
+ORDER BY SoDon DESC, a.ProdID, b.ProdID
+LIMIT 1;
+```
+*Giải thích:* chỉ đúng một cặp đạt 2 (Laptop + Mouse); nếu có nhiều cặp đồng hạng thì `LIMIT 1` bỏ sót, hãy dùng `RANK()`.
+</details>
+
+**Bài NC3.** **Phát hiện đơn có `TotalAmount` lệch** tổng chi tiết. Trước hết cố ý làm sai đơn 1 (trong transaction) rồi chạy truy vấn kiểm tra.
+*Kết quả mong đợi:* với dữ liệu gốc: **rỗng**; sau khi đặt `TotalAmount = 15000` cho đơn 1: một dòng `(1, 15000.00, 15600.00, -600.00)`.
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* so `TotalAmount` với `SUM(Quantity * UnitPrice)` trên cùng đơn bằng `HAVING`. Lời giải đầy đủ và cách thử an toàn ở mục **19.3**.
+</details>
+
+**Bài NC4.** Báo cáo theo tháng: doanh thu COMPLETED, **doanh thu lũy kế** và **% đóng góp vào tổng cả kỳ**.
+*Kết quả:*
+| Thang | DoanhThu | LuyKe | TyTrong |
+|---|---|---|---|
+| 2025-01 | 15600.00 | 15600.00 | 11.5 |
+| 2025-02 | 28000.00 | 43600.00 | 20.6 |
+| 2025-03 | 30300.00 | 73900.00 | 22.3 |
+| 2025-04 | 13000.00 | 86900.00 | 9.6 |
+| 2025-05 | 23500.00 | 110400.00 | 17.3 |
+| 2025-06 | 1700.00 | 112100.00 | 1.2 |
+| 2025-07 | 24000.00 | 136100.00 | 17.6 |
+
+<details><summary>Gợi ý và lời giải</summary>
+
+*Gợi ý:* (1) CTE doanh thu mỗi tháng; (2) `SUM(DoanhThu) OVER (ORDER BY Thang)` cho lũy kế; (3) `SUM(DoanhThu) OVER ()` (không `PARTITION`, không `ORDER BY`) cho tổng cả kỳ.
+```sql
+WITH m AS (
+    SELECT DATE_FORMAT(OrderDate, '%Y-%m') AS Thang, SUM(TotalAmount) AS DoanhThu
+    FROM SALEORDER
+    WHERE Status = 'COMPLETED'
+    GROUP BY DATE_FORMAT(OrderDate, '%Y-%m')
+)
+SELECT Thang, DoanhThu,
+       SUM(DoanhThu) OVER (ORDER BY Thang)                   AS LuyKe,
+       ROUND(DoanhThu * 100 / SUM(DoanhThu) OVER (), 1)      AS TyTrong
+FROM m;
+```
+*Giải thích:* dòng cuối `LuyKe = 136100` bằng tổng toàn kỳ; các tỷ trọng cộng lại xấp xỉ 100 (có sai số làm tròn).
+</details>
+
+---
+
 ## PHỤ LỤC A: TỔNG HỢP CÚ PHÁP
 
 ### A.1. DDL (cấu trúc)
@@ -7081,7 +8673,7 @@ DESCRIBE t;  SHOW TABLES;  SHOW CREATE TABLE t;
 ```sql
 INSERT INTO t (a, b) VALUES (1, 'x'), (2, 'y');
 INSERT INTO t (a, b) SELECT x, y FROM s WHERE ...;
-INSERT INTO t (a, b) VALUES (1, 'x') ON DUPLICATE KEY UPDATE b = VALUES(b);
+INSERT INTO t (a, b) VALUES (1, 'x') AS new_row ON DUPLICATE KEY UPDATE b = new_row.b;   -- 8.0.19+ (VALUES(b) đã deprecated)
 
 UPDATE t SET a = 1, b = b * 1.1 WHERE ...;
 UPDATE t JOIN s ON s.id = t.id SET t.a = s.a WHERE ...;
@@ -7118,6 +8710,25 @@ SELECT ... UNION [ALL] SELECT ...;
 | NULL | `IS NULL`, `IS NOT NULL` |
 | Tập con | `EXISTS`, `NOT EXISTS`, `ANY`, `ALL` |
 | Số học | `+ - * / DIV %` |
+
+
+### A.5. Index, Transaction, View, Procedure, Trigger (Chương 15–17)
+```sql
+-- Index
+CREATE [UNIQUE] INDEX idx_ten ON t (c1 [, c2]);   SHOW INDEX FROM t;   DROP INDEX idx_ten ON t;
+EXPLAIN SELECT ...;      EXPLAIN ANALYZE SELECT ...;     -- 8.0.18+
+
+-- Transaction (InnoDB)
+START TRANSACTION;  ...  COMMIT;      -- hoặc ROLLBACK;
+SAVEPOINT sp1;  ROLLBACK TO SAVEPOINT sp1;  RELEASE SAVEPOINT sp1;
+
+-- View
+CREATE OR REPLACE VIEW v AS SELECT ...;   DROP VIEW IF EXISTS v;
+
+-- Stored Procedure / Trigger (dùng DELIMITER khi gõ trong client)
+CREATE PROCEDURE sp (IN p INT) BEGIN ... END;     CALL sp(1);     DROP PROCEDURE IF EXISTS sp;
+CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW BEGIN ... END;     DROP TRIGGER IF EXISTS trg;
+```
 
 ---
 
@@ -7165,6 +8776,9 @@ SELECT ... UNION [ALL] SELECT ...;
 10. `INSERT ... SELECT` ghép cột theo **vị trí**.
 11. Xóa dữ liệu: con trước, cha sau.
 12. Xây câu truy vấn từ trong ra ngoài, chạy thử từng lớp, kiểm tra tổng.
+13. Điều kiện bọc hàm quanh cột (`YEAR(col)`) làm mất index; viết thành khoảng giá trị (15.7).
+14. Nhiều lệnh phụ thuộc nhau (chuyển tiền) phải nằm trong **một transaction**; lỗi một lệnh **không** tự hủy cả khối, phải `ROLLBACK` (16.4).
+15. Trước khi xóa trùng: `SELECT` xem trước, sao lưu, dùng transaction (19.1).
 
 ### B.4. Bảng lỗi MySQL thường gặp
 | Mã | Ý nghĩa | Hướng xử lý |
@@ -7174,7 +8788,7 @@ SELECT ... UNION [ALL] SELECT ...;
 | 1052 | Ambiguous column | Thêm tiền tố bí danh |
 | 1055 / 1140 | Cột không có trong GROUP BY / trộn cột với hàm tổng hợp | Thêm vào `GROUP BY` hoặc bọc hàm |
 | 1062 | Duplicate entry | Trùng khóa chính / UNIQUE |
-| 1093 | Bảng đích nằm trong subquery | Bọc thêm lớp derived table / JOIN |
+| 1093 | Bảng đích nằm trong subquery | `JOIN`, hoặc derived table có gộp nhóm / hint `NO_MERGE` (xem 8.13) |
 | 1111 | Invalid use of group function | Dùng `HAVING` thay `WHERE` |
 | 1136 | Số cột không khớp | Kiểm tra số cột `INSERT`/`SELECT` |
 | 1175 | Safe update mode | Thêm `WHERE` theo khóa chính |
@@ -7198,11 +8812,16 @@ SELECT ... UNION [ALL] SELECT ...;
 | Tự tăng | `AUTO_INCREMENT` | `IDENTITY(1,1)` | `SERIAL` / `GENERATED ... AS IDENTITY` |
 | Trích dẫn tên | `` `ten` `` | `[ten]` | `"ten"` |
 | UPDATE + JOIN | `UPDATE t JOIN s ON ... SET ...` | `UPDATE t SET ... FROM t JOIN s ON ...` | `UPDATE t SET ... FROM s WHERE ...` |
-| FULL OUTER JOIN | Không có (giả lập bằng UNION) | Có | Có |
+| FULL OUTER JOIN | Không có (giả lập: `LEFT JOIN` + `UNION ALL` + `RIGHT JOIN ... WHERE ... IS NULL`) | Có | Có |
 | LIKE phân biệt hoa/thường | Không (mặc định) | Tùy collation | Có (`ILIKE` để không phân biệt) |
 | Chia số nguyên `7/2` | `3.5` (`DIV` cho nguyên) | `3` | `3` |
 | Xóa UNIQUE | `DROP INDEX` | `DROP CONSTRAINT` | `DROP CONSTRAINT` |
 | `GROUP BY` chuẩn | `ONLY_FULL_GROUP_BY` (bản 5.7.5+) | Luôn chặt | Luôn chặt |
+| Bắt đầu transaction | `START TRANSACTION` / `BEGIN` | `BEGIN TRANSACTION` | `BEGIN` / `START TRANSACTION` |
+| Xóa index | `DROP INDEX ten ON bang` | `DROP INDEX ten ON bang` | `DROP INDEX ten` (không cần tên bảng) |
+| Xem kế hoạch thực thi | `EXPLAIN` | Plan hiển thị / `SET SHOWPLAN` | `EXPLAIN` |
+| Thủ tục lưu sẵn | `CREATE PROCEDURE` + `DELIMITER` | `CREATE PROCEDURE` (T-SQL) | `CREATE FUNCTION`/`PROCEDURE` (PL/pgSQL) |
+| Materialized view | Không có | Indexed view | `CREATE MATERIALIZED VIEW` |
 
 ---
 
@@ -7231,11 +8850,67 @@ DROP TABLE IF EXISTS DEMO_ENROLL, DEMO_LOG, DEMO_BOOK, DEMO_STUDENT, DEMO_CLASS;
 
 ---
 
+## PHỤ LỤC E: GHI CHÚ PHIÊN BẢN MYSQL
+
+**Phiên bản mục tiêu của tài liệu:** **MySQL 8.0 trở lên** (khuyến nghị bản 8.0 mới hoặc 8.4 LTS). Một số nội dung **không chạy** trên MySQL 5.7 hoặc cũ hơn.
+
+| Tính năng | Từ phiên bản | Nằm ở | Ghi chú |
+|---|---|---|---|
+| CTE (`WITH`), CTE đệ quy | 8.0 | Chương 10 | 5.7 không có. `cte_max_recursion_depth` mặc định 1000 |
+| Window Functions (`OVER`, `ROW_NUMBER`, `LAG`...) | 8.0 | Chương 10 | 5.7 không có |
+| `CHECK` thực sự được kiểm tra | 8.0.16 | 2.11.9 | Bản cũ chấp nhận cú pháp nhưng **bỏ qua** |
+| `ALTER TABLE ... RENAME COLUMN` | 8.0 | 2.7 | 5.7 dùng `CHANGE` |
+| `INTERSECT`, `EXCEPT` | 8.0.31 | 9.4 | Bản cũ dùng `IN`/`EXISTS`/`LEFT JOIN` |
+| `EXPLAIN ANALYZE` | 8.0.18 | 15.8 | |
+| `EXPLAIN FORMAT=TREE` | 8.0.16 | 15.8 | |
+| Alias cho dòng chèn trong `ON DUPLICATE KEY UPDATE` | 8.0.19 | 3.1, 11.8 | Cú pháp cũ `VALUES(col)` **deprecated từ 8.0.20** (vẫn chạy) |
+| `SQL_CALC_FOUND_ROWS`/`FOUND_ROWS()` | deprecated 8.0.17 | 19.2 | Dùng `COUNT(*)` riêng |
+| Invisible index | 8.0 | 15.8 | |
+| Biểu thức làm giá trị `DEFAULT` | 8.0.13 | 2.11.8 | |
+| `GROUP BY` **không còn tự sắp xếp** kết quả | 8.0 | 7.3 | 5.7 vẫn sắp ngầm theo cột gom nhóm |
+| `ONLY_FULL_GROUP_BY` bật mặc định | 5.7.5 | 7.13 | Chặt hơn so với bản cũ |
+| `utf8mb4` nên dùng thay `utf8` | — | 2.1 | `utf8` là bí danh cũ của `utf8mb3`, **deprecated** |
+| Hàm `PASSWORD()` | bị bỏ ở 8.0 | — | Tài liệu không dùng |
+
+
+## PHỤ LỤC F: DANH SÁCH NỘI DUNG CHƯA KIỂM CHỨNG TRÊN MYSQL
+
+> Môi trường soạn tài liệu **không có MySQL**. Số liệu, kết quả `SELECT` và logic đã được đối chiếu bằng **SQLite** (cùng dữ liệu mẫu). Những mục dưới đây dùng cú pháp hoặc hành vi **riêng của MySQL** nên **cần anh chạy thử** và nếu khác, hãy xem phiên bản MySQL của mình (Phụ lục E).
+
+| # | Nội dung | Vị trí | Điều cần kiểm tra |
+|---|---|---|---|
+| 1 | `UPDATE ... JOIN ... SET`, `DELETE alias FROM ... JOIN` | 3.2, 3.6, Dạng 9, 11, VD10, VD20 | Cú pháp đúng, số dòng bị ảnh hưởng |
+| 2 | `INSERT ... ON DUPLICATE KEY UPDATE` (cú pháp alias và bảng dẫn xuất) | 3.1, 11.8, A.2 | Chạy được, kết quả cập nhật đúng |
+| 3 | `INSERT ... WITH ... SELECT` (CTE trong INSERT) | VD30 | Cú pháp được chấp nhận |
+| 4 | Lỗi 1093 và cách né (bảng dẫn xuất có gộp nhóm/window; hint `NO_MERGE`) | 3.2, 8.13, 3.6.11, 19.1 | MySQL có thật sự báo/không báo lỗi trên phiên bản đang dùng |
+| 5 | `CHECK`, `AUTO_INCREMENT`, `FOREIGN KEY` và các mã lỗi (1062, 1048, 1364, 1451, 1452, 3819, 1369) | Chương 2, 3, 17 | Mã lỗi và thông báo đúng |
+| 6 | `GROUP_CONCAT`, `DATE_FORMAT`, `QUARTER`, `TIMESTAMPDIFF`, `DATEDIFF`, `LAST_INSERT_ID` | Chương 5, 7, 14 | Định dạng kết quả |
+| 7 | Kiểu số của kết quả (`AVG` ra 6 chữ số thập phân, phép chia `/` thập phân) | Nhiều chương | Số chữ số thập phân hiển thị |
+| 8 | Index: kết quả `EXPLAIN` (`type`, `key`, `rows`, `Extra`) | 15.8, 15.9 | **Mọi giá trị `EXPLAIN` chỉ mô tả dạng**, cần chạy thật |
+| 9 | Script tạo bảng 100.000 dòng bằng CTE đệ quy, `SET SESSION cte_max_recursion_depth` | 15.9 | Chạy được; con số thống kê (20 dòng/khách...) |
+| 10 | Khả năng dùng index của leftmost prefix, skip scan, covering index trong MySQL | 15.4, 15.9 | Đã đối chiếu SQLite; MySQL cần `EXPLAIN` |
+| 11 | Transaction: lệnh lỗi không hủy cả giao dịch, `ROLLBACK TO SAVEPOINT`, tự commit của DDL | Chương 16 | Hành vi trên InnoDB (đã mô phỏng SQLite cho phần commit/rollback/savepoint) |
+| 12 | Mức cô lập, `SELECT ... FOR UPDATE`, deadlock | 16.9 | Cần hai phiên MySQL |
+| 13 | `CREATE VIEW`, `WITH CHECK OPTION`, cập nhật qua view | 17.1 | Lỗi 1369 và quy tắc view cập nhật được (kết quả `SELECT` trên view đã kiểm bằng SQLite) |
+| 14 | **Stored Procedure** (`DELIMITER`, `DECLARE EXIT HANDLER`, `SIGNAL`, `ROW_COUNT()`, `CALL`) | 17.2 | Chạy thử toàn bộ |
+| 15 | **Trigger** (`BEFORE/AFTER`, `NEW/OLD`, `SIGNAL`) | 17.3 | Chạy thử toàn bộ; trigger không kích hoạt bởi `CASCADE` |
+| 16 | `DELETE ... ROW_NUMBER` / tự `JOIN` để xóa trùng | 19.1 | Số dòng bị xóa (3, 5, 6) |
+| 17 | `INTERSECT`/`EXCEPT` | 9.4 | Chỉ MySQL 8.0.31+ |
+| 18 | Đáp án Chương 20 dùng hàm MySQL | 20 | Đã khớp kết quả trên SQLite (quy đổi hàm ngày); chạy lại trên MySQL |
+| 19 | Tên index tự sinh cho khóa ngoại, kết quả `SHOW INDEX` | 15.3 | Tên có thể khác |
+
+**Cách dùng danh sách:** chạy `shop_db_reset.sql`, thử từng mục; nếu thông báo lỗi khác với tài liệu thì ghi lại phiên bản (`SELECT VERSION();`) để đối chiếu với Phụ lục E.
+
+---
+
 ## LỜI KẾT: CÁCH ÔN TẬP
 
 1. **Tuần 1:** Chương 1–4. Tự gõ lại script, làm hết bài tập.
 2. **Tuần 2:** Chương 5–6. Chạy từng JOIN, đếm số dòng kết quả và giải thích tại sao.
 3. **Tuần 3:** Chương 7–8, **làm chậm**. Với mỗi câu `GROUP BY`, hãy dùng `GROUP_CONCAT` để *nhìn các hộp*, vẽ 6 bước như mục 7.8.
 4. **Tuần 4:** Chương 9–11, rồi Chương 12–14: luyện đề theo quy trình 10 câu hỏi, tự làm trước khi xem đáp án.
+
+5. **Tuần 5 (mở rộng):** Chương 16 (Transaction) rồi Chương 15 (Index/EXPLAIN); Chương 18 (Chuẩn hóa).
+6. **Tuần 6:** Chương 19 (kỹ thuật thực hành) và **Chương 20** (bộ bài tập phân cấp); `VIEW` ở 17.1. Procedure/Trigger (17.2–17.3) để sau.
 
 *Hết tài liệu.*
