@@ -18,7 +18,7 @@ Mình học mỗi ngày và commit thường xuyên. Lịch sử commit của re
 - ✅ Data Structures & Algorithms (DSA, duy trì song song)
 
 ### Phase 2 — Mathematics & Data
-- [ ] Mathematics & Statistics
+- ✅ Mathematics & Statistics
 - [ ] NumPy & Pandas
 - [ ] Data Visualization
 - [ ] SQL
