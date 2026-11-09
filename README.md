@@ -19,7 +19,7 @@ Mình học mỗi ngày và commit thường xuyên. Lịch sử commit của re
 
 ### Phase 2 — Mathematics & Data
 - ✅ Mathematics & Statistics
-- [ ] NumPy & Pandas
+- ✅ NumPy & Pandas
 - [ ] Data Visualization
 - [ ] SQL
 - [ ] Data Cleaning & Preprocessing
