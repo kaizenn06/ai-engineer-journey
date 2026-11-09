@@ -1,15 +1,3 @@
-# AI Engineer Journey
-
-Mình là sinh viên năm 3 ngành Công nghệ thông tin tại PTIT, đang tự học từ nền tảng để trở thành **AI Engineer / ML Engineer**.
-
-Repository này lưu lại bài tập, ghi chú và các dự án trong quá trình học tập của mình, bắt đầu từ **09/10/2026**.
-
-**Mục tiêu:** Chuẩn bị kiến thức và portfolio để ứng tuyển thực tập AI/ML Engineer trước kỳ thực tập tốt nghiệp.
-
-Mình học mỗi ngày và commit thường xuyên. Lịch sử commit của repository là nhật ký học tập của mình.
-
----
- 
 ## Roadmap
 
 ### Phase 1 — Programming Fundamentals
