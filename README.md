@@ -8,8 +8,8 @@
 ### Phase 2 — Mathematics & Data
 - ✅ Mathematics & Statistics
 - ✅ NumPy & Pandas
-- [ ] Data Visualization
-- [ ] SQL
+- ✅ Data Visualization
+- ✅ SQL
 - [ ] Data Cleaning & Preprocessing
 
 ### Phase 3 — Machine Learning
