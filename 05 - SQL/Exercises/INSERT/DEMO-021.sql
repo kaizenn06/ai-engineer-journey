@@ -1,0 +1,6 @@
+INSERT INTO ALUMNI
+SELECT 
+    SID, 
+    FullName
+FROM STUDENT
+WHERE Graduated = 1;
